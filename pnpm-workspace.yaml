@@ -1,0 +1,8 @@
+# pnpm 11 movio a este archivo los ajustes que antes vivian en el campo "pnpm"
+# de package.json. No es un monorepo: no hay clave `packages`.
+
+# esbuild (dependencia transitiva de Vite) necesita su script de instalacion
+# para descomprimir el binario nativo. pnpm bloquea los scripts por defecto y
+# aborta cualquier comando hasta que se declare explicitamente cuales corren.
+allowBuilds:
+  esbuild: true

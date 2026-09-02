@@ -1,0 +1,20 @@
+[package]
+name = "cairn"
+version = "0.1.0"
+description = "Avisa cuando es hora de una pausa y mide cuanto dura."
+authors = ["Manu"]
+edition = "2021"
+
+[lib]
+# El sufijo `_lib` evita que la libreria y el binario compartan nombre, cosa
+# que en Windows rompe el link (rust-lang/cargo#8519).
+name = "cairn_lib"
+crate-type = ["rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

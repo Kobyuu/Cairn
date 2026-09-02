@@ -73,8 +73,12 @@ buenos. Un runner que reporta verde sin ejecutar nada es peor que ninguno.
 
 - [ ] `pnpm tauri dev` abre la ventana en ~10 s o menos en la segunda corrida.
 - [ ] El texto se ve con la tipografía y el color de Tailwind, no Times New Roman.
-- [ ] Cerrar la ventana termina el proceso — todavía **no** hay bandeja (etapa 3),
-      así que acá cerrar sí debe cerrar.
+- [ ] La ventana es **borderless**: sin barra de título ni botones de minimizar,
+      maximizar y cerrar (`decorations: false`).
+- [ ] Arrastrar sobre el cuerpo de la ventana la mueve (`data-tauri-drag-region`
+      + permiso `core:window:allow-start-dragging`).
+- [ ] Cerrar con **Alt+F4** termina el proceso — todavía **no** hay bandeja
+      (etapa 3), así que acá cerrar sí debe cerrar.
 - [ ] El `.exe` de `release` arranca con el IDE cerrado.
 
 ## Límites
