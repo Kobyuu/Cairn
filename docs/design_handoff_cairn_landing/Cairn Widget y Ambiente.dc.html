@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;1,6..72,300&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  html, body { margin:0; min-height:100%; background:#0d0d0e; }
+  body { color:#e8e8e6; font-family:'IBM Plex Mono',monospace; -webkit-font-smoothing:antialiased; }
+  a { color:oklch(0.76 0.05 150); text-decoration:none; }
+  a:hover { color:oklch(0.86 0.05 150); }
+  @keyframes cairnBreathe { 0%,100% { opacity:.5 } 50% { opacity:1 } }
+  @keyframes cairnHalo { 0%,100% { transform:scale(.92); opacity:.3 } 50% { transform:scale(1.06); opacity:.62 } }
+</style>
+</helmet>
+
+<section style="padding:64px 64px 40px; display:flex; flex-direction:column; gap:40px">
+  <div style="display:flex; align-items:flex-end; gap:40px; flex-wrap:wrap">
+    <div style="display:flex; flex-direction:column; gap:12px; max-width:700px">
+      <div style="font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#6d6f70">Cairn · turno 6 · Widget y Ambiente</div>
+      <div style="font-family:'Newsreader',Georgia,serif; font-weight:300; font-size:44px; line-height:1.08">Los dos modos que están todo el día encendidos</div>
+      <div style="font-size:13px; line-height:1.7; color:#a3a4a4; max-width:640px; text-wrap:pretty">Las dos ventanas son transparentes de verdad, así que están dibujadas sobre superficies de escritorio simuladas — clara y oscura — para verificar legibilidad. Cada estado está a tamaño real.</div>
+    </div>
+  </div>
+
+  <!-- ======================= WIDGET ======================= -->
+  <div style="display:flex; flex-direction:column; gap:18px">
+    <div style="display:flex; align-items:baseline; gap:14px">
+      <div style="font-size:11px; letter-spacing:.14em; padding:4px 8px; border:1px solid #3a3a3b; color:#c9c9c7">6a</div>
+      <div style="font-family:'Newsreader',Georgia,serif; font-size:26px; font-weight:300">Widget · 176 × 68</div>
+      <div style="font-size:12px; color:#8e8f8f">sin bordes · siempre encima · arrastrable desde cualquier punto</div>
+    </div>
+
+    <!-- sobre escritorio oscuro -->
+    <div style="position:relative; height:300px; border-radius:6px; overflow:hidden; background:linear-gradient(140deg,#1d2430 0%,#2a2118 55%,#141a1c 100%)">
+      <div style="position:absolute; inset:0; background-image:linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px); background-size:44px 44px"></div>
+      <div style="position:absolute; left:40px; top:34px; right:40px; bottom:34px; border-radius:5px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.07)"></div>
+      <div style="position:absolute; left:66px; top:64px; font-family:'Newsreader',Georgia,serif; font-size:15px; color:rgba(255,255,255,.28); line-height:2">ventana cualquiera del escritorio · el widget flota encima</div>
+
+      <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:space-evenly; padding:0 24px">
+
+        <div style="display:flex; flex-direction:column; align-items:center; gap:12px">
+          <div style="position:relative; width:176px; height:68px; border-radius:5px; background:rgba(11,12,11,.62); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid rgba(233,228,216,.10); display:flex; align-items:center; padding:0 18px; box-sizing:border-box; gap:11px; box-shadow:0 10px 30px rgba(0,0,0,.34)">
+            <div style="font-family:'Newsreader',Georgia,serif; font-size:38px; font-weight:300; line-height:1; color:#e9e4d8; font-variant-numeric:tabular-nums">27</div>
+            <div style="font-size:9px; letter-spacing:.24em; color:rgba(233,228,216,.42); line-height:1.8">MIN<br>RESTANTES</div>
+            <div style="position:absolute; left:0; bottom:0; height:2px; width:40%; background:oklch(0.76 0.05 150 / .7); border-radius:0 2px 2px 0"></div>
+          </div>
+          <div style="font-size:10px; letter-spacing:.2em; color:#8e8f8f">REPOSO</div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; align-items:center; gap:12px">
+          <div style="position:relative; width:176px; height:68px; border-radius:5px; background:rgba(11,12,11,.82); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid rgba(233,228,216,.20); display:flex; align-items:center; padding:0 14px 0 18px; box-sizing:border-box; gap:10px; box-shadow:0 12px 34px rgba(0,0,0,.42)">
+            <div style="font-family:'Newsreader',Georgia,serif; font-size:38px; font-weight:300; line-height:1; color:#e9e4d8; font-variant-numeric:tabular-nums">27</div>
+            <div style="display:flex; margin-left:auto; gap:6px">
+              <div style="width:30px; height:30px; border-radius:4px; border:1px solid rgba(233,228,216,.22); display:flex; align-items:center; justify-content:center; gap:2.5px" style-hover="background:rgba(233,228,216,.1)">
+                <div style="width:2.5px; height:11px; background:rgba(233,228,216,.72)"></div>
+                <div style="width:2.5px; height:11px; background:rgba(233,228,216,.72)"></div>
+              </div>
+              <div style="width:30px; height:30px; border-radius:4px; border:1px solid rgba(233,228,216,.22); display:flex; align-items:center; justify-content:center; font-size:9px; letter-spacing:.06em; color:rgba(233,228,216,.72)" style-hover="background:rgba(233,228,216,.1)">MODO</div>
+            </div>
+            <div style="position:absolute; left:0; bottom:0; height:2px; width:40%; background:oklch(0.76 0.05 150 / .85); border-radius:0 2px 2px 0"></div>
+          </div>
+          <div style="font-size:10px; letter-spacing:.2em; color:#8e8f8f">HOVER · PAUSAR / MODO</div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; align-items:center; gap:12px">
+          <div style="position:relative; width:176px; height:68px; border-radius:5px; background:rgba(11,12,11,.34); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border:1px dashed rgba(233,228,216,.3); display:flex; align-items:center; padding:0 18px; box-sizing:border-box; gap:11px; transform:scale(.96) rotate(-.6deg); box-shadow:0 20px 44px rgba(0,0,0,.5)">
+            <div style="font-family:'Newsreader',Georgia,serif; font-size:38px; font-weight:300; line-height:1; color:rgba(233,228,216,.6); font-variant-numeric:tabular-nums">27</div>
+            <div style="font-size:9px; letter-spacing:.24em; color:rgba(233,228,216,.3); line-height:1.8">MIN<br>RESTANTES</div>
+          </div>
+          <div style="font-size:10px; letter-spacing:.2em; color:#8e8f8f">ARRASTRE</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- sobre escritorio claro -->
+    <div style="position:relative; height:180px; border-radius:6px; overflow:hidden; background:linear-gradient(140deg,#e8e6e0 0%,#f3efe6 60%,#dfe3e1 100%)">
+      <div style="position:absolute; inset:0; background-image:linear-gradient(90deg, rgba(0,0,0,.03) 1px, transparent 1px), linear-gradient(rgba(0,0,0,.03) 1px, transparent 1px); background-size:44px 44px"></div>
+      <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:space-evenly; padding:0 24px">
+
+        <div style="display:flex; flex-direction:column; align-items:center; gap:12px">
+          <div style="position:relative; width:176px; height:68px; border-radius:5px; background:rgba(239,236,227,.72); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid rgba(26,28,25,.12); display:flex; align-items:center; padding:0 18px; box-sizing:border-box; gap:11px; box-shadow:0 8px 22px rgba(26,28,25,.12)">
+            <div style="font-family:'Newsreader',Georgia,serif; font-size:38px; font-weight:300; line-height:1; color:#1a1c19; font-variant-numeric:tabular-nums">27</div>
+            <div style="font-size:9px; letter-spacing:.24em; color:rgba(26,28,25,.45); line-height:1.8">MIN<br>RESTANTES</div>
+            <div style="position:absolute; left:0; bottom:0; height:2px; width:40%; background:oklch(0.5 0.05 150 / .8); border-radius:0 2px 2px 0"></div>
+          </div>
+          <div style="font-size:10px; letter-spacing:.2em; color:#6b6f6c">TEMA CLARO</div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; align-items:center; gap:12px">
+          <div style="position:relative; width:176px; height:68px; border-radius:5px; background:rgba(239,236,227,.55); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid rgba(26,28,25,.10); display:flex; align-items:center; padding:0 18px; box-sizing:border-box; gap:11px">
+            <div style="font-family:'Newsreader',Georgia,serif; font-size:38px; font-weight:300; line-height:1; color:rgba(26,28,25,.4); font-variant-numeric:tabular-nums">27</div>
+            <div style="font-size:9px; letter-spacing:.24em; color:rgba(26,28,25,.3); line-height:1.8">EN<br>PAUSA</div>
+            <div style="position:absolute; left:0; bottom:0; height:2px; width:40%; background:rgba(26,28,25,.22)"></div>
+          </div>
+          <div style="font-size:10px; letter-spacing:.2em; color:#6b6f6c">CICLO PAUSADO</div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; align-items:center; gap:12px">
+          <div style="position:relative; width:176px; height:68px; border-radius:5px; background:rgba(239,236,227,.78); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid oklch(0.5 0.05 150 / .45); display:flex; align-items:center; padding:0 18px; box-sizing:border-box; gap:11px; box-shadow:0 8px 22px rgba(26,28,25,.14)">
+            <div style="font-family:'Newsreader',Georgia,serif; font-size:38px; font-weight:300; line-height:1; color:#1a1c19; font-variant-numeric:tabular-nums">2</div>
+            <div style="font-size:9px; letter-spacing:.24em; color:rgba(26,28,25,.45); line-height:1.8">MIN<br>RESTANTES</div>
+            <div style="width:6px; height:6px; border-radius:50%; background:oklch(0.5 0.05 150); margin-left:auto; animation:cairnBreathe 5.5s ease-in-out infinite"></div>
+            <div style="position:absolute; left:0; bottom:0; height:3px; width:95%; background:oklch(0.5 0.05 150 / .9)"></div>
+          </div>
+          <div style="font-size:10px; letter-spacing:.2em; color:#6b6f6c">ÚLTIMO 10%</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div style="display:flex; gap:36px; flex-wrap:wrap; font-size:11px; line-height:2; color:#8e8f8f">
+      <div><span style="color:#6d6f70">CAJA</span><br>176 × 68 · radio 5 · borde 1px al 10% (20% en hover)</div>
+      <div><span style="color:#6d6f70">FONDO</span><br>bg al 62% + blur 14 · en hover sube a 82%</div>
+      <div><span style="color:#6d6f70">CIFRA</span><br>Newsreader 300 · 38px · tabular · minutos restantes</div>
+      <div><span style="color:#6d6f70">PROGRESO</span><br>hairline de 2px al pie · 3px en el último 10%</div>
+      <div><span style="color:#6d6f70">ARRASTRE</span><br>escala .96 · rotación -.6° · borde punteado · sombra larga</div>
+    </div>
+  </div>
+</section>
+
+<section style="padding:24px 64px 96px; display:flex; flex-direction:column; gap:22px">
+  <div style="display:flex; align-items:baseline; gap:14px">
+    <div style="font-size:11px; letter-spacing:.14em; padding:4px 8px; border:1px solid #3a3a3b; color:#c9c9c7">6b</div>
+    <div style="font-family:'Newsreader',Georgia,serif; font-size:26px; font-weight:300">Ambiente · barra superior</div>
+    <div style="font-size:12px; color:#8e8f8f">sin ventana · sin texto · 3 px que crecen a 5 px</div>
+  </div>
+
+  <div style="display:flex; flex-direction:column; gap:14px">
+    <sc-for list="{{ ambiente }}" as="a" hint-placeholder-count="5">
+      <div style="display:flex; align-items:center; gap:20px">
+        <div style="width:150px; flex:none; font-size:10px; letter-spacing:.2em; color:#8e8f8f; text-align:right">{{ a.label }}</div>
+        <div style="flex:1; height:78px; border-radius:5px; overflow:hidden; position:relative; background:{{ a.deskDark }}">
+          <div style="position:absolute; top:0; left:0; height:{{ a.h }}; width:{{ a.w }}; background:{{ a.colorDark }}; animation:{{ a.anim }}"></div>
+          <div style="position:absolute; left:16px; bottom:12px; font-size:11px; color:rgba(255,255,255,.28); font-family:'Newsreader',Georgia,serif; font-size:14px">escritorio oscuro</div>
+        </div>
+        <div style="flex:1; height:78px; border-radius:5px; overflow:hidden; position:relative; background:{{ a.deskLight }}">
+          <div style="position:absolute; top:0; left:0; height:{{ a.h }}; width:{{ a.w }}; background:{{ a.colorLight }}; animation:{{ a.anim }}"></div>
+          <div style="position:absolute; left:16px; bottom:12px; font-family:'Newsreader',Georgia,serif; font-size:14px; color:rgba(0,0,0,.3)">escritorio claro</div>
+        </div>
+        <div style="width:230px; flex:none; font-size:11px; line-height:1.7; color:#8e8f8f">{{ a.note }}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:flex; gap:36px; flex-wrap:wrap; font-size:11px; line-height:2; color:#8e8f8f; margin-top:8px">
+    <div><span style="color:#6d6f70">GROSOR</span><br>3 px todo el ciclo · 5 px en el último 10%</div>
+    <div><span style="color:#6d6f70">COLOR SOBRE OSCURO</span><br>oklch(0.82 0.06 150) al 55% → 90%</div>
+    <div><span style="color:#6d6f70">COLOR SOBRE CLARO</span><br>oklch(0.42 0.05 150) al 45% → 85%</div>
+    <div><span style="color:#6d6f70">AVANCE</span><br>pasos de 1% del ancho, sin easing</div>
+    <div><span style="color:#6d6f70">PAUSA</span><br>ancho congelado, opacidad al 18%, sin animación</div>
+    <div><span style="color:#6d6f70">CLICK</span><br>la barra no recibe eventos: pointer-events none</div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const dOn = p => `oklch(0.82 0.06 150 / ${p})`;
+    const lOn = p => `oklch(0.42 0.05 150 / ${p})`;
+    const deskDark = "linear-gradient(140deg,#1d2430 0%,#2a2118 55%,#141a1c 100%)";
+    const deskLight = "linear-gradient(140deg,#e8e6e0 0%,#f3efe6 60%,#dfe3e1 100%)";
+    const rows = [
+      ["INICIO · 4%", "4%", "3px", .5, .4, "none", "Apenas una insinuación en la esquina. No compite con nada."],
+      ["MEDIO · 48%", "48%", "3px", .62, .55, "none", "Opacidad y ancho suben juntos: el avance se lee sin mirar."],
+      ["AVISO CERCA · 91%", "91%", "5px", .9, .85, "cairnBreathe 5.5s ease-in-out infinite", "Último 10%: engorda a 5 px y respira al mismo ritmo que el halo de Foco."],
+      ["PAUSADO · 48%", "48%", "3px", .18, .16, "none", "Congelada y casi invisible. La quietud es el mensaje."],
+      ["CICLO CUMPLIDO", "100%", "5px", 1, .95, "none", "Ancho completo y opacidad plena por un segundo, justo antes de que aparezca Foco."]
+    ];
+    return {
+      ambiente: rows.map(([label, w, h, od, ol, anim, note]) => ({
+        label, w, h, anim, note, deskDark, deskLight,
+        colorDark: dOn(od), colorLight: lOn(ol)
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

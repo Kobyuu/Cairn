@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;1,6..72,300&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  html, body { margin:0; min-height:100%; background:#0b0c0b; }
+  body { color:#e9e4d8; font-family:'IBM Plex Mono',monospace; -webkit-font-smoothing:antialiased; }
+  a { color:oklch(0.76 0.05 150); text-decoration:none; }
+  a:hover { color:oklch(0.86 0.05 150); }
+  @keyframes cairnHalo { 0%,100% { transform:scale(.9); opacity:.26 } 50% { transform:scale(1.08); opacity:.55 } }
+  @keyframes cairnBreathe { 0%,100% { opacity:.5 } 50% { opacity:1 } }
+</style>
+</helmet>
+
+<section style="padding:64px 64px 96px; display:flex; flex-direction:column; gap:48px; max-width:1240px">
+
+  <div style="display:flex; flex-direction:column; gap:12px; max-width:680px">
+    <div style="font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#6d6f70">Cairn · kit de capturas</div>
+    <div style="font-family:'Newsreader',Georgia,serif; font-weight:300; font-size:44px; line-height:1.08">Cómo se muestra la app en la web</div>
+    <div style="font-size:13px; line-height:1.7; color:#a3a4a4; text-wrap:pretty">Tres encuadres, uno por modo. Todos comparten el mismo marco de escritorio, la misma sombra y el mismo fondo, así que las capturas se leen como una serie y no como tres imágenes sueltas. Es el 80% del peso visual de la landing.</div>
+  </div>
+
+  <!-- MARCO A -->
+  <div style="display:flex; flex-direction:column; gap:16px">
+    <div style="display:flex; align-items:baseline; gap:14px">
+      <div style="font-size:11px; letter-spacing:.14em; padding:4px 8px; border:1px solid #3a3a3b">A</div>
+      <div style="font-family:'Newsreader',Georgia,serif; font-size:24px; font-weight:300">Marco de escritorio · para Foco</div>
+      <div style="font-size:11px; color:#8e8f8f">1440 × 900 · radio 8 · escala 1.0 en el héroe</div>
+    </div>
+
+    <div style="padding:64px; background:linear-gradient(160deg,#15181a 0%,#0e100f 60%,#131110 100%); border:1px solid #1e1f21; border-radius:6px; display:flex; justify-content:center">
+      <div style="width:900px; aspect-ratio:16/10; border-radius:8px; overflow:hidden; border:1px solid rgba(233,228,216,.1); box-shadow:0 40px 90px rgba(0,0,0,.55), 0 4px 12px rgba(0,0,0,.4); position:relative; background:#0b0c0b">
+        <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:620px; height:620px; border-radius:50%; background:radial-gradient(circle, rgba(233,228,216,.08) 0%, transparent 62%); animation:cairnHalo 5.5s ease-in-out infinite"></div>
+        <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:430px; height:430px; border-radius:50%; border:1px solid rgba(233,228,216,.11); animation:cairnHalo 5.5s ease-in-out infinite .7s"></div>
+        <div style="position:absolute; inset:0; background-image:radial-gradient(circle, rgba(233,228,216,.11) .6px, transparent .6px); background-size:3px 3px; opacity:.5"></div>
+        <div style="position:absolute; inset:0; background:radial-gradient(ellipse at center, transparent 44%, rgba(11,12,11,.82) 100%)"></div>
+        <div style="position:absolute; top:30px; left:0; right:0; display:flex; justify-content:center; gap:14px; align-items:center; font-size:9px; letter-spacing:.3em; color:rgba(233,228,216,.38)">
+          <div style="width:44px; height:1px; background:rgba(233,228,216,.2)"></div>
+          <div>CORRECCIÓN DE POSTURA</div>
+          <div style="width:44px; height:1px; background:rgba(233,228,216,.2)"></div>
+        </div>
+        <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0">
+          <div style="font-family:'Newsreader',Georgia,serif; font-style:italic; font-size:15px; color:rgba(233,228,216,.5)">llevás en pausa</div>
+          <div style="font-family:'Newsreader',Georgia,serif; font-size:148px; font-weight:300; line-height:.94; letter-spacing:-.025em; font-variant-numeric:tabular-nums">01:24</div>
+          <div style="display:flex; align-items:center; gap:11px; margin-top:14px; font-size:9px; letter-spacing:.28em; color:rgba(233,228,216,.34)">
+            <div style="width:5px; height:5px; border-radius:50%; background:oklch(0.76 0.05 150); animation:cairnBreathe 5.5s ease-in-out infinite"></div>
+            <div>INHALAR · EXHALAR</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; margin-top:56px; font-size:10px">
+            <div style="padding:10px 28px; border-radius:999px; background:oklch(0.76 0.05 150); color:#0b0c0b; letter-spacing:.14em">LISTO</div>
+            <div style="display:flex; border:1px solid rgba(233,228,216,.2); border-radius:999px; overflow:hidden; color:rgba(233,228,216,.66)">
+              <div style="padding:10px 15px">posponer 5</div>
+              <div style="width:1px; background:rgba(233,228,216,.2)"></div>
+              <div style="padding:10px 11px; font-size:8px">▾</div>
+            </div>
+            <div style="padding:10px 17px; border:1px solid rgba(233,228,216,.2); border-radius:999px; color:rgba(233,228,216,.66)">ver rutina</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex; gap:32px; flex-wrap:wrap; font-size:10px; line-height:1.9; color:#7d7e7f">
+      <div><span style="color:#6d6f70">FONDO</span><br>linear-gradient 160° · #15181A → #0E100F → #131110</div>
+      <div><span style="color:#6d6f70">SOMBRA</span><br>0 40px 90px rgba(0,0,0,.55) + 0 4px 12px rgba(0,0,0,.4)</div>
+      <div><span style="color:#6d6f70">BORDE</span><br>1px rgba(233,228,216,.1) · radio 8</div>
+      <div><span style="color:#6d6f70">AIRE</span><br>64 px alrededor del marco</div>
+    </div>
+  </div>
+
+  <!-- MARCO B -->
+  <div style="display:flex; flex-direction:column; gap:16px">
+    <div style="display:flex; align-items:baseline; gap:14px">
+      <div style="font-size:11px; letter-spacing:.14em; padding:4px 8px; border:1px solid #3a3a3b">B</div>
+      <div style="font-family:'Newsreader',Georgia,serif; font-size:24px; font-weight:300">Recorte de escritorio · para Widget</div>
+      <div style="font-size:11px; color:#8e8f8f">un pedazo de pantalla real, no un marco completo</div>
+    </div>
+
+    <div style="display:flex; gap:20px; flex-wrap:wrap">
+      <div style="flex:1; min-width:420px; border-radius:8px; overflow:hidden; border:1px solid rgba(233,228,216,.1); box-shadow:0 30px 70px rgba(0,0,0,.5); position:relative; height:300px; background:linear-gradient(140deg,#1d2430 0%,#2a2118 55%,#141a1c 100%)">
+        <div style="position:absolute; inset:0; background-image:linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px); background-size:40px 40px"></div>
+        <div style="position:absolute; left:28px; top:24px; right:28px; bottom:24px; border-radius:5px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.07)"></div>
+        <div style="position:absolute; left:52px; top:52px; font-family:'Newsreader',Georgia,serif; font-size:14px; color:rgba(255,255,255,.24); line-height:2.1">tu editor · tu navegador · lo que sea<br>el widget queda encima, sin tapar nada</div>
+        <div style="position:absolute; right:44px; bottom:44px; width:176px; height:68px; border-radius:5px; background:rgba(11,12,11,.66); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid rgba(233,228,216,.1); display:flex; align-items:center; padding:0 18px; box-sizing:border-box; gap:11px; box-shadow:0 10px 30px rgba(0,0,0,.34)">
+          <div style="font-family:'Newsreader',Georgia,serif; font-size:38px; font-weight:300; line-height:1; font-variant-numeric:tabular-nums">27</div>
+          <div style="font-size:9px; letter-spacing:.24em; color:rgba(233,228,216,.42); line-height:1.8">MIN<br>RESTANTES</div>
+          <div style="position:absolute; left:0; bottom:0; height:2px; width:40%; background:oklch(0.76 0.05 150 / .7)"></div>
+        </div>
+      </div>
+      <div style="width:300px; flex:none; font-size:11px; line-height:1.9; color:#8e8f8f; display:flex; flex-direction:column; gap:14px">
+        <div>El widget se muestra siempre <span style="color:#e9e4d8">sobre una ventana ajena</span>, nunca sobre fondo plano: lo que se vende es que no molesta, y eso sólo se ve en contexto.</div>
+        <div style="font-size:10px; line-height:1.9; color:#7d7e7f"><span style="color:#6d6f70">RECORTE</span><br>16:9 o 3:2 · el widget siempre en la esquina inferior derecha, a 44 px de los bordes</div>
+        <div style="font-size:10px; line-height:1.9; color:#7d7e7f"><span style="color:#6d6f70">FONDO DE ESCRITORIO</span><br>gradiente 140° frío→cálido, o la captura real del usuario si hay permiso</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MARCO C -->
+  <div style="display:flex; flex-direction:column; gap:16px">
+    <div style="display:flex; align-items:baseline; gap:14px">
+      <div style="font-size:11px; letter-spacing:.14em; padding:4px 8px; border:1px solid #3a3a3b">C</div>
+      <div style="font-family:'Newsreader',Georgia,serif; font-size:24px; font-weight:300">Tira superior · para Ambiente</div>
+      <div style="font-size:11px; color:#8e8f8f">el modo más difícil de mostrar: hay que exagerar el encuadre, no la barra</div>
+    </div>
+
+    <div style="display:flex; gap:20px; flex-wrap:wrap">
+      <div style="flex:1; min-width:420px; display:flex; flex-direction:column; gap:12px">
+        <sc-for list="{{ tiras }}" as="t" hint-placeholder-count="3">
+          <div style="border-radius:8px; overflow:hidden; border:1px solid rgba(233,228,216,.1); box-shadow:0 20px 50px rgba(0,0,0,.45); position:relative; height:104px; background:{{ t.desk }}">
+            <div style="position:absolute; top:0; left:0; height:{{ t.h }}; width:{{ t.w }}; background:{{ t.color }}; animation:{{ t.anim }}"></div>
+            <div style="position:absolute; left:22px; bottom:16px; font-family:'Newsreader',Georgia,serif; font-size:15px; color:{{ t.textColor }}">{{ t.label }}</div>
+            <div style="position:absolute; right:22px; bottom:16px; font-size:10px; letter-spacing:.2em; color:{{ t.metaColor }}">{{ t.meta }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="width:300px; flex:none; font-size:11px; line-height:1.9; color:#8e8f8f; display:flex; flex-direction:column; gap:14px">
+        <div>Tres tiras en secuencia vertical cuentan el ciclo entero sin animación ni texto explicativo. Es el bloque que va justo debajo del héroe.</div>
+        <div style="font-size:10px; line-height:1.9; color:#7d7e7f"><span style="color:#6d6f70">ALTO</span><br>104 px por tira · 12 px entre tiras</div>
+        <div style="font-size:10px; line-height:1.9; color:#7d7e7f"><span style="color:#6d6f70">REGLA</span><br>la barra se muestra a su grosor real (3–5 px). Si no se ve, se agranda el encuadre, nunca la barra</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="border:1px solid #26272a; padding:26px; display:flex; gap:36px; flex-wrap:wrap; font-size:11px; line-height:1.9; color:#8e8f8f">
+    <div><span style="color:#6d6f70">FORMATO DE EXPORTACIÓN</span><br>PNG a 2× · WebP para producción</div>
+    <div><span style="color:#6d6f70">TEMA EN LA WEB</span><br>siempre el oscuro: la landing es oscura</div>
+    <div><span style="color:#6d6f70">CONTENIDO</span><br>siempre la misma rutina y los mismos números (01:24 / 27 min) en toda la web</div>
+    <div><span style="color:#6d6f70">NUNCA</span><br>marcos de macOS, manos sosteniendo pantallas, perspectiva 3D</div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = "linear-gradient(140deg,#1d2430 0%,#2a2118 55%,#141a1c 100%)";
+    const light = "linear-gradient(140deg,#e8e6e0 0%,#f3efe6 60%,#dfe3e1 100%)";
+    return {
+      tiras: [
+        { desk: dark, w: "18%", h: "3px", color: "oklch(0.82 0.06 150 / .55)", anim: "none",
+          label: "empieza el ciclo", meta: "3 PX · 18%",
+          textColor: "rgba(255,255,255,.3)", metaColor: "rgba(255,255,255,.24)" },
+        { desk: light, w: "62%", h: "3px", color: "oklch(0.42 0.05 150 / .55)", anim: "none",
+          label: "va por la mitad", meta: "3 PX · 62%",
+          textColor: "rgba(0,0,0,.34)", metaColor: "rgba(0,0,0,.26)" },
+        { desk: dark, w: "93%", h: "5px", color: "oklch(0.82 0.06 150 / .9)", anim: "cairnBreathe 5.5s ease-in-out infinite",
+          label: "falta poco: la barra respira", meta: "5 PX · 93%",
+          textColor: "rgba(255,255,255,.3)", metaColor: "rgba(255,255,255,.24)" }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

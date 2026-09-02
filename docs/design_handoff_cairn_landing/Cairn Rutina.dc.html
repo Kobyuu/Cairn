@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+  html, body { margin:0; height:100%; background:#0b0c0b; }
+  body { -webkit-font-smoothing:antialiased; }
+  a { color:oklch(0.76 0.05 150); text-decoration:none; }
+  a:hover { color:oklch(0.86 0.05 150); }
+  @keyframes cairnHalo { 0%,100% { transform:scale(.9); opacity:.24 } 50% { transform:scale(1.08); opacity:.5 } }
+  @keyframes cairnBreathe { 0%,100% { opacity:.5 } 50% { opacity:1 } }
+</style>
+</helmet>
+
+<div style="width:100vw; height:100vh; background:{{ bg }}; color:{{ fg }}; position:relative; overflow:hidden; font-family:'IBM Plex Mono',monospace">
+
+  <div style="position:absolute; left:50%; top:{{ haloTop }}; transform:translate(-50%,-50%); width:760px; height:760px; border-radius:50%; background:radial-gradient(circle, color-mix(in oklab, {{ fg }} 8%, transparent) 0%, transparent 62%); animation:cairnHalo 5.5s ease-in-out infinite; transition:top .45s cubic-bezier(.4,0,.2,1); pointer-events:none"></div>
+  <div style="position:absolute; inset:0; background-image:radial-gradient(circle, color-mix(in oklab, {{ fg }} 12%, transparent) .6px, transparent .6px); background-size:3px 3px; opacity:.45; pointer-events:none"></div>
+  <div style="position:absolute; inset:0; background:radial-gradient(ellipse at center, transparent 44%, color-mix(in oklab, {{ bg }} 80%, transparent) 100%); pointer-events:none"></div>
+
+  <div style="position:absolute; top:34px; left:44px; width:9px; height:9px; border-left:1px solid color-mix(in oklab, {{ fg }} 25%, transparent); border-top:1px solid color-mix(in oklab, {{ fg }} 25%, transparent)"></div>
+  <div style="position:absolute; top:34px; right:44px; width:9px; height:9px; border-right:1px solid color-mix(in oklab, {{ fg }} 25%, transparent); border-top:1px solid color-mix(in oklab, {{ fg }} 25%, transparent)"></div>
+  <div style="position:absolute; bottom:34px; left:44px; width:9px; height:9px; border-left:1px solid color-mix(in oklab, {{ fg }} 25%, transparent); border-bottom:1px solid color-mix(in oklab, {{ fg }} 25%, transparent)"></div>
+  <div style="position:absolute; bottom:34px; right:44px; width:9px; height:9px; border-right:1px solid color-mix(in oklab, {{ fg }} 25%, transparent); border-bottom:1px solid color-mix(in oklab, {{ fg }} 25%, transparent)"></div>
+
+  <div onClick="{{ toggleTema }}" title="Cambiar tema" style="position:absolute; top:40px; right:78px; width:11px; height:11px; border-radius:50%; border:1px solid color-mix(in oklab, {{ fg }} 30%, transparent); cursor:pointer; z-index:5" style-hover="background:color-mix(in oklab, {{ fg }} 30%, transparent)"></div>
+
+  <!-- encabezado: cronómetro grande en colapsado, línea fina en expandido -->
+  <div style="position:absolute; left:0; right:0; top:0; display:flex; flex-direction:column; align-items:center; padding-top:{{ headPad }}; transition:padding-top .45s cubic-bezier(.4,0,.2,1)">
+    <div style="display:flex; align-items:center; gap:18px; font-size:10px; letter-spacing:.34em; color:color-mix(in oklab, {{ fg }} 38%, transparent)">
+      <div style="width:56px; height:1px; background:color-mix(in oklab, {{ fg }} 22%, transparent)"></div>
+      <div>CORRECCIÓN DE POSTURA</div>
+      <div style="width:56px; height:1px; background:color-mix(in oklab, {{ fg }} 22%, transparent)"></div>
+    </div>
+    <div style="font-family:'Newsreader',Georgia,serif; font-weight:300; font-size:{{ cronoSize }}; line-height:1; letter-spacing:-.025em; font-variant-numeric:tabular-nums; margin-top:{{ cronoTop }}; transition:font-size .45s cubic-bezier(.4,0,.2,1), margin-top .45s cubic-bezier(.4,0,.2,1)">{{ crono }}</div>
+    <div style="display:flex; align-items:center; gap:14px; margin-top:16px; font-size:10px; letter-spacing:.3em; color:color-mix(in oklab, {{ fg }} 34%, transparent); opacity:{{ alientoOp }}; transition:opacity .3s ease">
+      <div style="width:5px; height:5px; border-radius:50%; background:{{ ac }}; animation:cairnBreathe 5.5s ease-in-out infinite"></div>
+      <div>INHALAR · EXHALAR</div>
+    </div>
+  </div>
+
+  <!-- panel de rutina -->
+  <div style="position:absolute; left:0; right:0; top:{{ panelTop }}; top:172px; bottom:142px; display:flex; justify-content:center; opacity:{{ panelOp }}; pointer-events:{{ panelEvents }}; transition:opacity .35s ease">
+    <div style="width:860px; max-width:calc(100vw - 160px); display:flex; flex-direction:column; min-height:0">
+
+      <div style="display:flex; align-items:center; gap:16px; padding-bottom:16px; border-bottom:1px solid color-mix(in oklab, {{ fg }} 14%, transparent); flex:none">
+        <div style="font-size:10px; letter-spacing:.26em; color:color-mix(in oklab, {{ fg }} 40%, transparent)">{{ modoLabel }}</div>
+        <div style="font-size:10px; letter-spacing:.2em; color:color-mix(in oklab, {{ fg }} 24%, transparent)">{{ metaLabel }}</div>
+        <div style="margin-left:auto; display:flex; gap:8px; font-size:11px">
+          <sc-if value="{{ leyendo }}" hint-placeholder-val="{{ true }}">
+            <div onClick="{{ editar }}" style="padding:8px 16px; border:1px solid color-mix(in oklab, {{ fg }} 20%, transparent); border-radius:999px; color:color-mix(in oklab, {{ fg }} 66%, transparent); letter-spacing:.1em; cursor:pointer" style-hover="background:color-mix(in oklab, {{ fg }} 8%, transparent)">EDITAR</div>
+          </sc-if>
+          <sc-if value="{{ editando }}" hint-placeholder-val="{{ false }}">
+            <div onClick="{{ guardar }}" style="padding:8px 16px; border-radius:999px; background:{{ ac }}; color:{{ bg }}; letter-spacing:.1em; cursor:pointer" style-hover="filter:brightness(1.1)">GUARDAR</div>
+          </sc-if>
+          <sc-if value="{{ editando }}" hint-placeholder-val="{{ false }}">
+            <div onClick="{{ cancelar }}" style="padding:8px 14px; border:1px solid color-mix(in oklab, {{ fg }} 20%, transparent); border-radius:999px; color:color-mix(in oklab, {{ fg }} 46%, transparent); letter-spacing:.1em; cursor:pointer" style-hover="background:color-mix(in oklab, {{ fg }} 8%, transparent)">CANCELAR</div>
+          </sc-if>
+        </div>
+      </div>
+
+      <!-- LECTURA -->
+      <div style="flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; padding:24px 4px 24px; display:{{ displayLectura }}; flex-direction:column; gap:24px; font-family:'Newsreader',Georgia,serif">
+        <div style="display:flex; gap:40px; align-items:flex-start">
+          <div style="flex:1; display:flex; flex-direction:column; gap:26px; min-width:0">
+            <div style="font-size:14px; letter-spacing:.26em; font-family:'IBM Plex Mono',monospace; color:color-mix(in oklab, {{ fg }} 40%, transparent)">CUELLO</div>
+            <sc-for list="{{ tareasA }}" as="t" hint-placeholder-count="3">
+              <div onClick="{{ t.toggle }}" style="display:flex; align-items:flex-start; gap:18px; cursor:pointer" style-hover="opacity:.82">
+                <div style="width:26px; height:26px; flex:none; margin-top:5px; border:1px solid {{ t.boxBorder }}; background:{{ t.boxBg }}; display:flex; align-items:center; justify-content:center; color:{{ bg }}; font-family:'IBM Plex Mono',monospace; font-size:13px">{{ t.check }}</div>
+                <div style="font-size:27px; font-weight:300; line-height:1.5; color:{{ t.color }}; text-decoration:{{ t.deco }}; text-wrap:pretty">{{ t.text }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="width:290px; flex:none; border:1px solid color-mix(in oklab, {{ fg }} 30%, transparent); padding:9px; background:color-mix(in oklab, {{ fg }} 4%, transparent)">
+            <div style="position:relative; width:100%; height:200px; border:1px solid color-mix(in oklab, {{ fg }} 14%, transparent)">
+              <image-slot id="cairn-rutina-lamina" shape="rect" fit="cover" placeholder="lámina de referencia"></image-slot>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:9px; font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.24em; color:color-mix(in oklab, {{ fg }} 40%, transparent)">
+              <div>LÁMINA I</div>
+              <div>CUELLO</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:1px; background:color-mix(in oklab, {{ fg }} 12%, transparent)"></div>
+
+        <div style="display:flex; flex-direction:column; gap:26px">
+          <div style="font-size:14px; letter-spacing:.26em; font-family:'IBM Plex Mono',monospace; color:color-mix(in oklab, {{ fg }} 40%, transparent)">HOMBROS Y ESPALDA</div>
+          <sc-for list="{{ tareasB }}" as="t" hint-placeholder-count="2">
+            <div onClick="{{ t.toggle }}" style="display:flex; align-items:flex-start; gap:18px; cursor:pointer" style-hover="opacity:.82">
+              <div style="width:26px; height:26px; flex:none; margin-top:5px; border:1px solid {{ t.boxBorder }}; background:{{ t.boxBg }}; display:flex; align-items:center; justify-content:center; color:{{ bg }}; font-family:'IBM Plex Mono',monospace; font-size:13px">{{ t.check }}</div>
+              <div style="font-size:27px; font-weight:300; line-height:1.5; color:{{ t.color }}; text-decoration:{{ t.deco }}; text-wrap:pretty">{{ t.text }}</div>
+            </div>
+          </sc-for>
+          <div style="font-style:italic; font-size:20px; color:color-mix(in oklab, {{ fg }} 46%, transparent); line-height:1.6; padding-left:44px; border-left:1px solid color-mix(in oklab, {{ fg }} 16%, transparent); margin-left:0">Si duele, pará. No es una rutina de fuerza.</div>
+        </div>
+      </div>
+
+      <!-- EDICIÓN -->
+      <div style="flex:1; min-height:0; display:{{ displayEdicion }}; flex-direction:column">
+        <div style="flex:1; min-height:0; display:flex; margin-top:22px; border:1px solid color-mix(in oklab, {{ fg }} 16%, transparent); background:color-mix(in oklab, {{ fg }} 3%, transparent)">
+          <div style="width:52px; flex:none; border-right:1px solid color-mix(in oklab, {{ fg }} 12%, transparent); padding:22px 0; font-size:12px; line-height:2.1; text-align:right; color:color-mix(in oklab, {{ fg }} 22%, transparent)">
+            <sc-for list="{{ lineNums }}" as="n" hint-placeholder-count="12">
+              <div style="padding-right:14px">{{ n }}</div>
+            </sc-for>
+          </div>
+          <textarea value="{{ fuente }}" onChange="{{ onFuente }}" spellcheck="false" style="flex:1; min-width:0; background:transparent; border:none; outline:none; resize:none; padding:22px 26px; font-family:'IBM Plex Mono',monospace; font-size:15px; line-height:2.1; color:{{ fg }}; caret-color:{{ ac }}"></textarea>
+        </div>
+        <div style="display:flex; align-items:center; gap:20px; padding-top:14px; font-size:10px; letter-spacing:.2em; color:color-mix(in oklab, {{ fg }} 30%, transparent)">
+          <div>MARKDOWN · # TÍTULO · - LISTA · - [ ] CASILLA · **NEGRITA**</div>
+          <div style="margin-left:auto">CTRL+S GUARDAR · ESC CANCELAR</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- controles -->
+  <div style="position:absolute; bottom:88px; left:0; right:0; display:flex; align-items:center; justify-content:center; gap:12px; font-size:12px">
+    <div style="padding:12px 34px; border-radius:999px; background:{{ ac }}; color:{{ bg }}; letter-spacing:.14em; cursor:pointer" style-hover="filter:brightness(1.1)">LISTO</div>
+    <div style="display:flex; align-items:stretch; border:1px solid color-mix(in oklab, {{ fg }} 20%, transparent); border-radius:999px; overflow:hidden; color:color-mix(in oklab, {{ fg }} 66%, transparent)">
+      <div style="padding:12px 18px; letter-spacing:.06em; cursor:pointer" style-hover="background:color-mix(in oklab, {{ fg }} 8%, transparent)">posponer 5</div>
+      <div style="width:1px; background:color-mix(in oklab, {{ fg }} 20%, transparent)"></div>
+      <div style="padding:12px 13px; font-size:9px; cursor:pointer" style-hover="background:color-mix(in oklab, {{ fg }} 8%, transparent)">▾</div>
+    </div>
+    <div onClick="{{ togglePanel }}" style="padding:12px 20px; border:1px solid {{ verBorde }}; border-radius:999px; color:{{ verColor }}; letter-spacing:.06em; cursor:pointer" style-hover="background:color-mix(in oklab, {{ fg }} 8%, transparent)">{{ verLabel }}</div>
+  </div>
+
+  <div style="position:absolute; bottom:52px; left:0; right:0; text-align:center; font-family:'Newsreader',Georgia,serif; font-style:italic; font-size:14px; color:color-mix(in oklab, {{ fg }} 30%, transparent)">{{ pista }}</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;tema&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;oscuro&quot;,&quot;claro&quot;],&quot;default&quot;:&quot;oscuro&quot;,&quot;tsType&quot;:&quot;'oscuro' | 'claro'&quot;}}">
+class Component extends DCLogic {
+  state = {
+    s: 84, dark: null, vista: "colapsado",
+    hechas: {},
+    fuente: `# Corrección de postura
+
+## Cuello
+- [ ] Mentón al pecho, 30 segundos
+- [ ] Oreja al hombro, 20 por lado
+- [ ] Mirada al techo, sin forzar
+
+## Hombros y espalda
+- [ ] Rotación de hombros, 10 hacia atrás
+- [ ] Manos entrelazadas, estirar hacia arriba
+
+> Si duele, pará. No es una rutina de fuerza.`
+  };
+  componentDidMount() {
+    this.t = setInterval(() => this.setState(p => ({ s: p.s + 1 })), 1000);
+  }
+  componentWillUnmount() { clearInterval(this.t); }
+
+  tarea(id, text, fg, ac, bg) {
+    const done = !!this.state.hechas[id];
+    return {
+      text, check: done ? "✓" : "",
+      color: done ? `color-mix(in oklab, ${fg} 34%, transparent)` : fg,
+      deco: done ? "line-through" : "none",
+      boxBg: done ? ac : "transparent",
+      boxBorder: done ? ac : `color-mix(in oklab, ${fg} 26%, transparent)`,
+      toggle: () => this.setState(p => ({ hechas: { ...p.hechas, [id]: !p.hechas[id] } }))
+    };
+  }
+
+  renderVals() {
+    const dark = this.state.dark ?? (this.props.tema !== "claro");
+    const bg = dark ? "#0b0c0b" : "#efece3";
+    const fg = dark ? "#e9e4d8" : "#1a1c19";
+    const ac = dark ? "oklch(0.76 0.05 150)" : "oklch(0.5 0.05 150)";
+    const v = this.state.vista;
+    const abierto = v !== "colapsado";
+    const mm = String(Math.floor(this.state.s / 60)).padStart(2, "0");
+    const ss = String(this.state.s % 60).padStart(2, "0");
+    const hechas = Object.values(this.state.hechas).filter(Boolean).length;
+
+    return {
+      crono: mm + ":" + ss, bg, fg, ac,
+      dark,
+      leyendo: v === "lectura", editando: v === "edicion",
+      haloTop: abierto ? "22%" : "50%",
+      headPad: abierto ? "34px" : "150px",
+      cronoSize: abierto ? "60px" : "196px",
+      cronoTop: abierto ? "8px" : "6px",
+      alientoOp: abierto ? 0 : 1,
+      panelOp: abierto ? 1 : 0,
+      panelEvents: abierto ? "auto" : "none",
+      displayLectura: v === "lectura" ? "flex" : "none",
+      displayEdicion: v === "edicion" ? "flex" : "none",
+      modoLabel: v === "edicion" ? "EDITANDO LA RUTINA" : "RUTINA",
+      metaLabel: v === "edicion" ? "MARKDOWN · 1 DOCUMENTO" : hechas + " DE 5 HECHAS",
+      verLabel: abierto ? "ocultar rutina" : "ver rutina",
+      verBorde: abierto ? `color-mix(in oklab, ${ac} 55%, transparent)` : `color-mix(in oklab, ${fg} 20%, transparent)`,
+      verColor: abierto ? ac : `color-mix(in oklab, ${fg} 66%, transparent)`,
+      pista: v === "edicion" ? "los cambios se guardan en tu documento de rutina"
+        : abierto ? "tocá una casilla para marcarla · el ciclo sigue esperando"
+        : "mantené posponer para elegir los minutos",
+      tareasA: [
+        this.tarea("a1", "Mentón al pecho, 30 segundos", fg, ac, bg),
+        this.tarea("a2", "Oreja al hombro, 20 por lado", fg, ac, bg),
+        this.tarea("a3", "Mirada al techo, sin forzar", fg, ac, bg)
+      ],
+      tareasB: [
+        this.tarea("b1", "Rotación de hombros, 10 hacia atrás", fg, ac, bg),
+        this.tarea("b2", "Manos entrelazadas, estirar hacia arriba", fg, ac, bg)
+      ],
+      fuente: this.state.fuente,
+      lineNums: this.state.fuente.split("\n").map((_, i) => i + 1),
+      onFuente: e => this.setState({ fuente: e.target.value }),
+      togglePanel: () => this.setState(p => ({ vista: p.vista === "colapsado" ? "lectura" : "colapsado" })),
+      editar: () => this.setState({ vista: "edicion" }),
+      guardar: () => this.setState({ vista: "lectura" }),
+      cancelar: () => this.setState({ vista: "lectura" }),
+      toggleTema: () => this.setState(p => ({ dark: !(p.dark ?? (this.props.tema !== "claro")) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

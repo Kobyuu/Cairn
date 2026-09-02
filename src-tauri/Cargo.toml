@@ -11,10 +11,34 @@ edition = "2021"
 name = "cairn_lib"
 crate-type = ["rlib"]
 
+# Las dependencias se compilan sin informacion de depuracion.
+#
+# No es una optimizacion cosmetica: el crate `windows` -que entra por el plugin
+# de notificaciones y trae medio WinRT- con `debuginfo=2` hace que rustc
+# desborde su PROPIA pila en Windows y muera con STATUS_STACK_BUFFER_OVERRUN,
+# asi que sin esto la etapa 3 directamente no compila en esta maquina.
+# No afecta depurar Cairn: nuestro crate conserva todos sus simbolos.
+[profile.dev.package."*"]
+debug = 0
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+# `tray-icon` es la feature que trae el icono y el menu de la bandeja. Sin ella
+# el modulo `tauri::tray` no existe.
+tauri = { version = "2", features = ["tray-icon"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+
+# Los cuatro plugins oficiales de la etapa 3. Un "plugin" de Tauri es un crate
+# que se registra en el builder y le agrega comandos y estado al core. Los
+# cuatro se usan SOLO desde Rust: hacia el frontend van comandos propios de
+# Cairn, asi que no hace falta ningun paquete JS ni ninguna entrada nueva en
+# `capabilities/` (el ACL de Tauri v2 gatea los comandos de plugin invocados
+# desde el webview, no las llamadas desde Rust).
+tauri-plugin-store = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-autostart = "2"
+# Va plano, sin `[target.'cfg(...)']`: Cairn es solo Windows (CLAUDE.md §1).
+tauri-plugin-single-instance = "2"

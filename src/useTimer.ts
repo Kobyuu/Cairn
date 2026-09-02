@@ -56,6 +56,19 @@ export function useTimer() {
   const reset = () => run("timer_reset");
   const snooze = (minutes?: number) => run("timer_snooze", { minutes: minutes ?? null });
   const setIntervalMinutes = (minutes: number) => run("timer_set_interval", { minutes });
+  // Ajuste, no accion: cambia lo que va a sumar el proximo posponer y NO mueve
+  // el reloj. `snooze` si lo mueve. Ver el comentario de `timer_set_quick_snooze`.
+  const setQuickSnoozeMinutes = (minutes: number) =>
+    run("timer_set_quick_snooze", { minutes });
 
-  return { snapshot, nowMs, pause, resume, reset, snooze, setIntervalMinutes };
+  return {
+    snapshot,
+    nowMs,
+    pause,
+    resume,
+    reset,
+    snooze,
+    setIntervalMinutes,
+    setQuickSnoozeMinutes,
+  };
 }

@@ -1,0 +1,15 @@
+{
+  // El validador CSS nativo de VS Code no conoce las at-rules de Tailwind v4
+  // (`@theme`, `@apply`, `@variant`, `@custom-variant`) y las marca como
+  // desconocidas. Es un falso positivo: Tailwind las procesa en el build, que
+  // pasa en verde. Se apaga la regla entera y no cada at-rule porque la lista
+  // crece con cada version de Tailwind.
+  //
+  // La validacion de verdad de `src/index.css` la hace `pnpm build`.
+  "css.lint.unknownAtRules": "ignore",
+  "scss.lint.unknownAtRules": "ignore",
+  "less.lint.unknownAtRules": "ignore",
+
+  // Que Tailwind IntelliSense entienda `index.css` como CSS de Tailwind.
+  "tailwindCSS.experimental.configFile": "src/index.css"
+}

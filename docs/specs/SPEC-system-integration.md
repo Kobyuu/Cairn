@@ -23,6 +23,18 @@ opcionalmente, un paquete JS que expone sus comandos al frontend.
 
 Más la feature `tray-icon` del crate `tauri`. Ninguna dependencia de terceros.
 
+**Resuelto al implementar:** los cuatro se usan **solo desde Rust**, y hacia el
+webview van comandos propios de Cairn (`settings_snapshot`,
+`settings_set_autostart`). Por eso **no hace falta ningún paquete JS** ni ninguna
+entrada nueva en `capabilities/`: el ACL de Tauri v2 gatea los comandos de plugin
+invocados desde el webview, no las llamadas desde Rust (CLAUDE.md §11).
+
+**Además, un cambio de perfil de compilación, no una dependencia:**
+`[profile.dev.package."*"] debug = 0` en `src-tauri/Cargo.toml`. El crate
+`windows` que entra por el plugin de notificaciones, compilado con `debuginfo=2`,
+hace que **rustc desborde su propia pila** en Windows y muera con
+`STATUS_STACK_BUFFER_OVERRUN`. Sin esa línea la etapa 3 no compila.
+
 ## Alcance
 
 ### Bandeja
@@ -61,9 +73,28 @@ es un no-op si la ventana está oculta o minimizada.
 ```
 
 Cada clave tiene un default en código: un `store.json` ausente, vacío o corrupto
-arranca con defaults y se reescribe, **nunca** rompe el arranque. Cambiar el
-intervalo mientras el temporizador corre **no** reinicia el ciclo: solo afecta al
-próximo `Running`.
+arranca con defaults y se reescribe, **nunca** rompe el arranque.
+
+Cambiar el intervalo mientras el temporizador corre **no** reinicia el ciclo: solo
+afecta al próximo `Running`.
+
+> **Decisión de Manu, 2026-09-02.** Esto **reemplaza** el comportamiento de la
+> etapa 2, donde `timer_set_interval` reiniciaba el ciclo. El motivo: cambiar un
+> ajuste no puede destruir tiempo ya invertido — es la misma familia que "cambiar
+> de modo nunca reinicia la cuenta" (CLAUDE.md §2). De paso desaparece la
+> excepción para `Elapsed` que la etapa 2 necesitaba para no borrar una
+> confirmación pendiente por la puerta de atrás.
+>
+> Efecto lateral conocido y aceptado: la rama de despertar-tardío de `advance`
+> mide contra el intervalo **vigente**, así que bajar el intervalo y después
+> suspender la PC puede convertir en reinicio silencioso un caso que antes
+> avisaba. Es un borde raro y blindarlo obligaría a arrastrar el intervalo con el
+> que nació cada ciclo.
+>
+> Alternativa descartada, anotada por si el uso real la pide: reencuadrar el
+> ciclo preservando lo corrido (`deadline = inicio_del_ciclo + intervalo_nuevo`,
+> acotado a "ahora"), que da efecto inmediato **y** no pierde tiempo, a cambio de
+> más lógica y más tests.
 
 ### Notificación
 
@@ -100,23 +131,76 @@ Lo testeable automáticamente es la capa de ajustes, no el sistema operativo.
   faltantes (→ defaults), uno con tipos equivocados (→ defaults, sin panic), y
   uno corrupto o vacío (→ defaults). Roundtrip serializar→deserializar idempotente.
 - `cargo test` — cambiar `interval_min` con el temporizador en `Running` no
-  altera el `deadline_ms` en curso.
+  altera el `deadline_ms` en curso
+  (`changing_the_interval_leaves_the_running_cycle_alone`), ni se lleva puesta
+  una confirmación pendiente
+  (`changing_the_interval_does_not_swallow_a_pending_confirmation`).
 - **Bandeja, notificación, instancia única y autostart: verificación manual.** No
   hay forma honesta de automatizarlos acá, y simular el registro de Windows
   costaría más que la checklist.
 
 ## Verificación manual
 
-- [ ] Icono visible en la bandeja con los cuatro grupos del menú.
-- [ ] Cerrar con la X → sigue en bandeja, el contador no se reinició.
-- [ ] Doble ejecución del `.exe` → una sola instancia, traída al frente.
-- [ ] Notificación al vencer, con el texto correcto.
-- [ ] Ajustes sobreviven a cerrar y reabrir.
+Con `pnpm tauri dev`. Para que la espera sea corta, empezar bajando el intervalo
+a 1 minuto desde la pantalla de ajustes.
+
+**Bandeja y ciclo de vida**
+
+- [ ] Icono del mojón visible en la bandeja, con los cuatro grupos del menú:
+      los tres modos (deshabilitados), pausar/reanudar, Ajustes y Salir.
+- [ ] Cerrar con la X → la ventana desaparece, el icono sigue en la bandeja y el
+      contador **no se reinició** (verificable al reabrir desde "Ajustes").
+- [ ] "Ajustes" en la bandeja con la ventana escondida **y minimizada** → la trae
+      al frente en los dos casos (es el orden `show → unminimize → set_focus`).
+- [ ] "Salir" → el proceso `Cairn.exe` desaparece del Administrador de tareas.
+- [ ] Doble clic al `.exe` con la app ya abierta → **no** aparece una segunda
+      instancia; se trae la existente al frente.
+
+**Bandeja y estado compartido**
+
+- [ ] Pausar desde la bandeja → el ítem pasa a decir "Reanudar" **y** la ventana
+      muestra "temporizador detenido". Reanudar desde la ventana → el ítem vuelve
+      a "Pausar" solo.
+- [ ] Con el temporizador vencido, el ítem de pausa queda **deshabilitado**.
+
+**Notificación**
+
+- [ ] Al vencer aparece la notificación de Windows con "Cairn" y
+      "Es hora de una pausa.".
+- [ ] Apretar un botón justo en el segundo del vencimiento **igual** notifica.
+
+**Ajustes**
+
+- [ ] Cambiar el intervalo con el ciclo corriendo → el contador en pantalla
+      **no salta**: sigue bajando desde donde estaba. El intervalo nuevo recién
+      se usa al apretar LISTO.
+- [ ] Cambiar el intervalo, cerrar la app desde la bandeja y reabrir → persiste.
+- [ ] `%APPDATA%\com.kobyuu.cairn\store.json` existe desde el primer arranque y
+      se puede abrir con el Bloc de Notas.
+- [ ] Borrar `store.json` a mano y abrir → arranca con 45 min, sin error.
+- [ ] Escribir basura adentro (`{"interval_min": "hola"}`) → arranca con 45 y lo
+      reescribe, sin perder los otros ajustes.
 - [ ] Autostart on → reiniciar Windows → arranca. Autostart off → no arranca.
-- [ ] `store.json` borrado → arranca con defaults.
+- [ ] Con autostart en on, sacar la entrada a mano desde el Administrador de
+      tareas → reabrir Ajustes muestra el interruptor **apagado** (lee el
+      registro, no el JSON).
+
+**Diseño** (`docs/DESIGN.md`)
+
+- [ ] Los halos respiran juntos, desfasados, y el arco de acento gira despacio.
+- [ ] El contador no baila al cambiar de cifra (`tabular-nums`).
+- [ ] `LISTO` está **en el mismo píxel** contando, en pausa y vencido.
+- [ ] Con "Mostrar animaciones en Windows" apagado, los halos quedan quietos
+      pero visibles, no desaparecen.
 
 ## Límites
 
+- **Sabido y aceptado:** `tauri-plugin-store` guarda con un `fs::write` pelado,
+  **sin temporal + rename**, así que la regla de escritura atómica de CLAUDE.md §3
+  no aplica a `store.json` — un corte de luz a mitad puede truncarlo. Está
+  mitigado de verdad: `Settings::from_json` tolera cualquier basura y cae a los
+  defaults, así que el arranque nunca se rompe; lo que se pierde son los ajustes.
+  La regla sí aplica, y sin excepción, a `notes/routine.md` en la etapa 5.
 - **Nunca:** guardar la rutina ni ningún contenido en `store.json` (CLAUDE.md §3).
 - **Nunca:** `unsafe` ni Win32 directo para el foco — `set_focus()` ya trae el
   workaround del ALT sintético.

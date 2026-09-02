@@ -4,8 +4,9 @@
 // sin esperar minutos reales y para que el frontend nunca acumule su propio
 // contador (la resta se hace cada vez contra deadlineMs/sinceMs).
 
+// No hay "idle": el ciclo siempre nace corriendo, con la hora de pared real
+// leida en el arranque del core. Ver el comentario de `Phase` en timer.rs.
 export type Phase =
-  | { kind: "idle" }
   | { kind: "running"; deadlineMs: number }
   | { kind: "paused"; remainingMs: number }
   | { kind: "elapsed"; sinceMs: number };
@@ -23,7 +24,6 @@ export function remainingMs(phase: Phase, nowMs: number): number {
       return Math.max(0, phase.deadlineMs - nowMs);
     case "paused":
       return phase.remainingMs;
-    case "idle":
     case "elapsed":
       return 0;
   }
