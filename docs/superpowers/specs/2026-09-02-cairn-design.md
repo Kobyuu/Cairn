@@ -141,7 +141,20 @@ Dos consecuencias:
    ventana está oculta o minimizada. Siempre:
    `show()` → `unminimize()` → `set_focus()`.
 
-### D8 — Almacenamiento de la rutina
+### D8 — Ciclo de vida: cerrar no es salir
+
+- `WindowEvent::CloseRequested` en cualquiera de las tres ventanas →
+  `api.prevent_close()` + `hide()`. La app queda en la bandeja.
+- `RunEvent::ExitRequested` → `api.prevent_exit()`. Sin esto, Tauri termina el
+  proceso cuando se ocultan/destruyen todas las ventanas y la bandeja queda
+  huérfana.
+- La única salida real es "Salir" en el menú de la bandeja → `app.exit(0)`.
+- `tauri-plugin-single-instance` debe registrarse **primero**, antes que
+  cualquier otro plugin (requisito documentado). Su callback hace
+  `show()` → `unminimize()` → `set_focus()` sobre la ventana del modo activo,
+  en ese orden, por D7.
+
+### D9 — Almacenamiento de la rutina
 
 `%APPDATA%\<app>\notes\routine.md`: un `.md` real dentro de un **directorio**
 de notas, no un archivo suelto ni una cadena en la config. La etapa 2 (espacio
@@ -209,4 +222,4 @@ casilla en la vista renderizada es voltear `[ ]`↔`[x]` en el fuente por
 ## Fuera de alcance (etapa 2, no bloquear)
 
 La rutina crece hacia un espacio de notas/tareas/recordatorios en markdown,
-estilo Notion mínimo. D8 lo deja abierto sin migración.
+estilo Notion mínimo. D9 lo deja abierto sin migración.
