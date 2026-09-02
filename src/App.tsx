@@ -309,7 +309,18 @@ export default function App() {
 
   return (
     <main
-      data-tauri-drag-region
+      // "deep" y no el atributo pelado. Con el atributo sin valor, Tauri exige
+      // que el click caiga EXACTAMENTE sobre este elemento (`el ===
+      // composedPath[0]`), y como toda la pantalla esta cubierta por hijos -la
+      // sobre-linea, el cronometro, la fila de botones-, arrastrar y el doble
+      // click para maximizar solo funcionaban en los huecos vacios. Con "deep"
+      // vale todo el subarbol.
+      //
+      // Los controles siguen siendo clickeables sin pelear con el arrastre:
+      // Tauri excluye A, BUTTON, INPUT, SELECT, TEXTAREA, LABEL y SUMMARY, mas
+      // cualquier cosa con `role` interactivo -por eso el interruptor lleva
+      // `role="switch"`- o `tabindex`.
+      data-tauri-drag-region="deep"
       className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden font-sans"
     >
       <Backdrop />
