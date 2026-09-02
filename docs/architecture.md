@@ -45,8 +45,15 @@ enum Phase {
   suspensión. Con `Instant`, dormir 2h dejaría el temporizador intacto.
 - Epoch-ms cruza a JS y se compara directo contra `Date.now()`: mismo dominio
   de reloj, sin conversiones ni dependencia de `chrono`.
-- Guarda contra saltos de reloj (NTP, cambio manual): si
-  `remaining > interval`, recortar a `interval`.
+- Guarda contra saltos de reloj (NTP, cambio manual): si el restante supera el
+  largo del **ciclo en curso**, recortarlo a ese largo. La cota es el ciclo y no
+  el intervalo configurado porque posponer abre un ciclo de otra duración —
+  posponer 5 min con un intervalo de 1 min es legítimo, y medir contra el
+  intervalo se lo comía al primer tick. Por eso `Running` lleva su `cycle_ms`.
+  El vencimiento tardío de D3 sí se sigue midiendo contra el intervalo.
+  _(Precisado el 2026-09-02 al implementar la etapa 2; la redacción original
+  decía "si `remaining > interval`, recortar a `interval`" y no contemplaba un
+  posponer más largo que el intervalo.)_
 
 Un solo hilo en Rust chequea a 1 Hz si `now >= deadline`. NO emite el countdown
 cada segundo: emite eventos solo en transiciones (started / paused / resumed /
