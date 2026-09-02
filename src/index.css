@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+/* Las dos fuentes de la marca, EMPAQUETADAS LOCALES.
+   Los `.woff2` vienen adentro de los paquetes y Vite los copia al bundle, asi
+   que la app no le pide nada a ninguna red al arrancar (CLAUDE.md §2). Esta es
+   la razon por la que no se usa el `@import` de Google Fonts que traen los
+   prototipos del handoff.
+
+   De Newsreader se toma la variante `opsz`: es la que trae el eje de tamaño
+   optico, que es lo que el handoff pide (`opsz 6..72`). Importa de verdad acá,
+   porque el mismo tipo se usa a 196 px en el cronometro y a 19 px en la
+   sobre-linea, y sin ese eje el trazo fino se rompe en el chico. Va tambien la
+   italica, que es lo que usan la sobre-linea y la pista del pie. */
+@import "@fontsource-variable/newsreader/opsz.css";
+@import "@fontsource-variable/newsreader/opsz-italic.css";
+/* De IBM Plex Mono alcanza el 400: es el unico peso que usan las etiquetas. */
+@import "@fontsource/ibm-plex-mono/400.css";
+
 /* Sistema de diseno de Cairn. La fuente normativa es docs/DESIGN.md; el detalle
    fino, el handoff en docs/design_handoff_cairn/.
 
@@ -16,11 +32,10 @@
   --color-ac-hover: oklch(0.82 0.055 150);
 
   /* Newsreader para cifras y frases; IBM Plex Mono para etiquetas y datos.
-     PENDIENTE (docs/DESIGN.md §2): las dos tienen que ir EMPAQUETADAS locales.
-     Cairn no hace red (CLAUDE.md §2), asi que el @import de Google Fonts que
-     traen los prototipos no puede entrar a la app. Hasta que esten los
-     archivos, el stack cae a Georgia y a la mono del sistema. */
-  --font-sans: "Newsreader", Georgia, "Times New Roman", serif;
+     El nombre con "Variable" es el que registra el paquete de la variante
+     variable; los que siguen son la red de contencion si el `.woff2` no
+     cargara. */
+  --font-sans: "Newsreader Variable", Newsreader, Georgia, "Times New Roman", serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
 }
 
