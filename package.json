@@ -13,6 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2.11.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
@@ -23,6 +24,7 @@
     "@types/react-dom": "^19.2.5",
     "@vitejs/plugin-react": "^4.6.0",
     "eslint": "^10.9.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "tailwindcss": "^4.3.3",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.69.0",

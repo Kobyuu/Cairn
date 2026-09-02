@@ -53,7 +53,8 @@ Equivalencia para leer el handoff: `deadline_ms == cycleStartedAt + interval`.
 7. Suspender y despertar se comporta según D3: dormido **más** de un intervalo →
    reinicio silencioso; **menos** → `Elapsed` con el atraso real, contando desde
    `deadline_ms`, no desde el despertar.
-8. Un reloj que salta para atrás no deja un restante mayor que el intervalo.
+8. Un reloj que salta para atrás no deja un restante mayor que el **ciclo en
+   curso** (que es el intervalo, salvo que se haya pospuesto — ver `architecture.md` §D2).
 
 ## Tests (TDD — se escriben ANTES del código)
 
