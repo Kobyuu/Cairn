@@ -1,1 +1,173 @@
 @import "tailwindcss";
+
+/* Sistema de diseno de Cairn. La fuente normativa es docs/DESIGN.md; el detalle
+   fino, el handoff en docs/design_handoff_cairn/.
+
+   Regla dura: NINGUN componente hardcodea un color (CLAUDE.md §5). Todo sale de
+   aca. Los grises no son tokens propios: son mezclas de la tinta contra
+   transparente, que es lo que mantiene el tema claro y el oscuro coherentes con
+   una sola definicion. */
+
+@theme {
+  /* Tema oscuro, que es el default del producto. */
+  --color-bg: #0b0c0b;
+  --color-fg: #e9e4d8;
+  --color-ac: oklch(0.76 0.05 150);
+  --color-ac-hover: oklch(0.82 0.055 150);
+
+  /* Newsreader para cifras y frases; IBM Plex Mono para etiquetas y datos.
+     PENDIENTE (docs/DESIGN.md §2): las dos tienen que ir EMPAQUETADAS locales.
+     Cairn no hace red (CLAUDE.md §2), asi que el @import de Google Fonts que
+     traen los prototipos no puede entrar a la app. Hasta que esten los
+     archivos, el stack cae a Georgia y a la mono del sistema. */
+  --font-sans: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
+}
+
+/* Los porcentajes de mezcla que usa el handoff, con nombre. Tenerlos como
+   variables evita repetir la formula de `color-mix` en cada componente y, sobre
+   todo, evita que alguien invente un 37 % porque no encontro el 38 %.
+
+   Nunca usar `currentColor` adentro de `color-mix`: no resuelve contra un
+   `color` seteado en linea y rompe el tema claro. */
+:root {
+  --fg-66: color-mix(in oklab, var(--color-fg) 66%, transparent);
+  --fg-52: color-mix(in oklab, var(--color-fg) 52%, transparent);
+  --fg-42: color-mix(in oklab, var(--color-fg) 42%, transparent);
+  --fg-38: color-mix(in oklab, var(--color-fg) 38%, transparent);
+  --fg-34: color-mix(in oklab, var(--color-fg) 34%, transparent);
+  --fg-30: color-mix(in oklab, var(--color-fg) 30%, transparent);
+  --fg-25: color-mix(in oklab, var(--color-fg) 25%, transparent);
+  --fg-22: color-mix(in oklab, var(--color-fg) 22%, transparent);
+  --fg-20: color-mix(in oklab, var(--color-fg) 20%, transparent);
+  --fg-18: color-mix(in oklab, var(--color-fg) 18%, transparent);
+  --fg-13: color-mix(in oklab, var(--color-fg) 13%, transparent);
+  --fg-12: color-mix(in oklab, var(--color-fg) 12%, transparent);
+  --fg-10: color-mix(in oklab, var(--color-fg) 10%, transparent);
+  --fg-9: color-mix(in oklab, var(--color-fg) 9%, transparent);
+  --fg-8: color-mix(in oklab, var(--color-fg) 8%, transparent);
+  --ac-55: color-mix(in oklab, var(--color-ac) 55%, transparent);
+  --bg-82: color-mix(in oklab, var(--color-bg) 82%, transparent);
+}
+
+/* Tema claro. Solo cambian las tres bases: las mezclas de arriba se recalculan
+   solas porque estan definidas contra `--color-fg`.
+
+   El valor va en INGLES ("light"), igual que los que valida `settings.rs`, para
+   que el dia que exista el selector de tema el ajuste persistido se pueda
+   escribir tal cual en el atributo. Hoy nadie lo activa: el selector es etapa 6.
+
+   Ambiente NO usa esto: elige su tinta segun el fondo de la ventana de atras
+   (docs/DESIGN.md §2), no segun el tema de la app. */
+[data-theme="light"] {
+  --color-bg: #efece3;
+  --color-fg: #1a1c19;
+  --color-ac: oklch(0.5 0.05 150);
+  --color-ac-hover: oklch(0.56 0.055 150);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  -webkit-font-smoothing: antialiased;
+  /* La app no es un documento: no hay nada que seleccionar ni que arrastrar. */
+  user-select: none;
+  cursor: default;
+}
+
+/* Las cuatro animaciones de la marca. La respiracion de 5,5 s es el unico ritmo
+   del producto y se repite igual en Foco, en el punto del Widget y en la barra
+   de Ambiente. */
+@keyframes cairn-halo {
+  0%,
+  100% {
+    transform: scale(0.9);
+    opacity: 0.28;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.62;
+  }
+}
+
+@keyframes cairn-wash {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.14);
+    opacity: 0.85;
+  }
+}
+
+@keyframes cairn-turn {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes cairn-breathe {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Accesibilidad: con movimiento reducido los halos, el wash, el arco y la
+   respiracion se CONGELAN EN SU ESTADO MEDIO -no desaparecen, que dejaria la
+   pantalla vacia-.
+
+   El ancho y el grosor de la barra de Ambiente quedan intactos a proposito
+   (etapa 4): son informacion, no decoracion. Esa distincion es la regla. */
+@media (prefers-reduced-motion: reduce) {
+  .cairn-halo,
+  .cairn-wash,
+  .cairn-turn,
+  .cairn-breathe {
+    animation: none !important;
+  }
+  .cairn-halo {
+    transform: scale(0.99);
+    opacity: 0.45;
+  }
+  .cairn-wash {
+    transform: scale(1.07);
+    opacity: 0.68;
+  }
+  .cairn-breathe {
+    opacity: 0.75;
+  }
+}
+
+.cairn-halo {
+  animation: cairn-halo 5.5s ease-in-out infinite;
+}
+.cairn-wash {
+  animation: cairn-wash 11s ease-in-out infinite;
+}
+.cairn-turn {
+  animation: cairn-turn 45s linear infinite;
+}
+.cairn-breathe {
+  animation: cairn-breathe 5.5s ease-in-out infinite;
+}
+
+/* Hover: 150 ms y SOLO de color (docs/DESIGN.md §3). */
+.cairn-press {
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+}

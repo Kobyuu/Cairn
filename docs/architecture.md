@@ -120,9 +120,9 @@ que puede no ser todavía la del monitor destino. El alto se multiplica a mano
 para que mida lo mismo al 100% y al 150%.
 
 **`h_css` sale del handoff de diseño, no del brief original.** El brief pedía
-4 px fijos; `docs/design_handoff_cairn_foco/README.md` (dirección "Aliento",
-aprobada, posterior) fija **3 px** normalmente y **5 px en el último 10% del
-ciclo**, respirando con la curva `breathe` de 5,5 s. Gana el handoff: es una
+4 px fijos; el handoff (dirección "Aliento", aprobada, posterior — ver
+[`DESIGN.md`](DESIGN.md) §4) fija **3 px** normalmente y **5 px en el último 10%
+del ciclo**, respirando con la curva `breathe` de 5,5 s. Gana el handoff: es una
 decisión visual y es la más reciente. Lo que no cambia es la aritmética de DPI.
 
 Config de la ventana: `transparent`, `decorations: false`, `shadow: false`,
@@ -197,7 +197,8 @@ Cairn/
    ├─ capabilities/default.json
    └─ src/
       ├─ main.rs                       # shim generado
-      ├─ lib.rs                        # builder, plugins, setup, bandeja
+      ├─ lib.rs                        # builder, plugins, setup, ciclo de vida
+      ├─ tray.rs                       # icono y menú de la bandeja
       ├─ timer.rs                      # máquina de estados + hilo 1 Hz
       ├─ modes.rs                      # show/hide, geometría, monitor
       ├─ settings.rs                   # envoltorio de tauri-plugin-store

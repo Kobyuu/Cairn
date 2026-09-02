@@ -1,18 +1,35 @@
+mod settings;
 mod timer;
+mod tray;
 
 use std::sync::Mutex;
 use tauri::Manager;
 
-/// Arranca el proceso de Tauri: registra el estado del temporizador, expone los
-/// comandos que las ventanas pueden llamar, lanza el hilo de 1 Hz, y le entrega
-/// el control al loop de eventos del sistema, que no vuelve hasta que la app
-/// termina.
+/// Arranca el proceso de Tauri: registra los plugins y el estado del
+/// temporizador, expone los comandos que las ventanas pueden llamar, arma la
+/// bandeja, lanza el hilo de 1 Hz, y le entrega el control al loop de eventos
+/// del sistema, que no vuelve hasta que la app termina de verdad.
 pub fn run() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
+        // El de instancia unica va PRIMERO, antes que cualquier otro plugin.
+        // Es un requisito documentado del propio plugin ("plugins run in the
+        // order they were added in to the builder, so make sure that this
+        // plugin is registered first") y falla en silencio si no se respeta:
+        // la segunda instancia arranca igual y quedan dos Cairn peleandose la
+        // bandeja. El callback recibe el AppHandle de la instancia que YA
+        // estaba viva, mas el argv y el cwd de la que se acaba de intentar
+        // abrir; nosotros solo usamos el primero.
+        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+            tray::show_main(app);
+        }))
+        .plugin(tauri_plugin_store::Builder::default().build())
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_autostart::Builder::new().build())
         // `invoke_handler` es la lista de funciones de Rust que el frontend
         // puede llamar con `invoke("nombre")`. Los comandos propios de la app no
         // necesitan permiso en `capabilities/`: el ACL de Tauri v2 solo gatea
-        // los comandos `core:*` y los de plugins.
+        // los comandos `core:*` y los de plugins. Por eso los cuatro plugins se
+        // usan solo desde Rust y hacia el webview van estos comandos nuestros.
         .invoke_handler(tauri::generate_handler![
             timer::timer_snapshot,
             timer::timer_pause,
@@ -20,18 +37,68 @@ pub fn run() {
             timer::timer_reset,
             timer::timer_snooze,
             timer::timer_set_interval,
+            timer::timer_set_quick_snooze,
+            settings::settings_snapshot,
+            settings::settings_set_autostart,
         ])
         .setup(|app| {
+            let handle = app.handle().clone();
+
+            // Los ajustes se leen ANTES de crear el estado: el ciclo tiene que
+            // nacer con el intervalo guardado, no con el default de fabrica y
+            // un reinicio despues.
+            let saved = settings::load(&handle);
+            // Se reescribe en el arranque, aunque no haya cambiado nada. Es lo
+            // que pide la spec y tiene un motivo concreto: si el archivo no
+            // existia o estaba corrupto, asi queda uno valido en disco que Manu
+            // puede abrir con el Bloc de Notas y editar a mano (CLAUDE.md §3).
+            // Sin esto, `store.json` recien aparece cuando se toca un ajuste.
+            settings::save(&handle, &saved);
+
+            let state = timer::initial_state(saved.interval_min, saved.quick_snooze_min);
+
             // `manage` guarda un valor en el core y se lo inyecta a cualquier
             // comando que lo pida por tipo. Va detras de un `Mutex` -el candado
-            // de la stdlib- porque lo tocan a la vez el hilo de 1 Hz y los
-            // comandos que llegan de las ventanas. El estado vive aca y no en
-            // JS por D1: las ventanas son vistas intercambiables, y WebView2
+            // de la stdlib- porque lo tocan a la vez el hilo de 1 Hz, la bandeja
+            // y los comandos que llegan de las ventanas. El estado vive aca y no
+            // en JS por D1: las ventanas son vistas intercambiables, y WebView2
             // estrangula los timers de JS en las que estan ocultas.
-            app.manage(Mutex::new(timer::initial_state()));
-            timer::spawn_ticker(app.handle().clone());
+            app.manage(Mutex::new(state));
+
+            // La bandeja se arma despues del `manage` porque su item de pausa se
+            // pinta contra el estado que acaba de quedar registrado.
+            tray::init(&handle, state)?;
+            timer::spawn_ticker(handle);
             Ok(())
         })
-        .run(tauri::generate_context!())
+        .on_window_event(|window, event| {
+            // Cerrar una ventana NO cierra la app (D8): se cancela el cierre y
+            // se esconde. La unica salida real es "Salir" en la bandeja.
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                if let Err(error) = window.hide() {
+                    eprintln!("[cairn] no se pudo esconder la ventana: {error}");
+                }
+            }
+        })
+        // `build` + `run` en vez de `.run()` directo: es la unica forma de
+        // engancharse a `RunEvent`, que es donde vive el `prevent_exit`.
+        .build(tauri::generate_context!())
         .expect("no se pudo iniciar Tauri");
+
+    app.run(|_app, event| {
+        if let tauri::RunEvent::ExitRequested { code, api, .. } = event {
+            // Sin este `prevent_exit`, Tauri termina el proceso apenas se
+            // esconde la ultima ventana y la bandeja queda huerfana.
+            //
+            // Pero NO puede ser incondicional, o "Salir" tampoco podria salir.
+            // El campo `code` es exactamente lo que distingue los dos casos:
+            // `None` cuando la salida la disparo la interaccion del usuario
+            // (cerrar la ultima ventana), `Some` cuando la pidio el programa
+            // -que es lo que hace nuestro `app.exit(0)` desde la bandeja-.
+            if code.is_none() {
+                api.prevent_exit();
+            }
+        }
+    });
 }

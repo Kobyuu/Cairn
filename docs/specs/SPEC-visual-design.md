@@ -10,15 +10,28 @@ lógica del temporizador.
 
 ## Fuente de verdad
 
-`docs/design_handoff_cairn_foco/` — dirección **"Gráfica" (dial)**.
+**[`docs/DESIGN.md`](../DESIGN.md) es normativo**; el detalle medido está en el
+handoff. La dirección aprobada es **"Aliento"** (halos que respiran a 5,5 s).
 
-| Archivo                       | Qué es                                                          |
-| ----------------------------- | --------------------------------------------------------------- |
-| `README.md`                   | especificación medida: geometría, tokens, tipografía, animaciones |
-| `Cairn Foco Grafico.dc.html`  | **fuente de verdad visual** de Foco: dial, arco y cronómetro reales |
-| `Cairn Foco.dc.html`          | dirección "Aliento" (halos que respiran) — alternativa, para comparar |
-| `Cairn Direcciones.dc.html`   | exploración completa: turno 3 es Aliento, turnos 2 y 1 descartados |
-| `support.js`                  | runtime para abrir los `.dc.html` en el navegador; **no es diseño** |
+> **Corrección.** Una versión anterior de esta spec daba por aprobada la
+> dirección **"Gráfica" (dial)**. El handoff posterior la descartó: el dial no
+> existe en una barra de 3 px, y ese es justamente el criterio que decide —
+> Aliento es la única de las tres familias cuyo lenguaje escala a los tres modos.
+> `Cairn Foco Grafico.dc.html` y `Cairn Foco Estampa.dc.html` quedan como
+> registro y **no se implementan**.
+
+| Archivo                                        | Qué es                                                              |
+| ---------------------------------------------- | ------------------------------------------------------------------- |
+| `design_handoff_cairn/README.md`               | especificación medida: geometría, tokens, tipografía, animaciones    |
+| `design_handoff_cairn/Cairn Foco.dc.html`      | **fuente de verdad visual** de Foco (dirección aprobada)             |
+| `design_handoff_cairn/Cairn Rutina.dc.html`    | panel de rutina: colapsado, lectura y edición, con la transición     |
+| `design_handoff_cairn/Cairn Widget y Ambiente.dc.html` | los dos modos de fondo y todos sus estados                   |
+| `design_handoff_cairn/Cairn Ajustes.dc.html`   | ventana de ajustes, interactiva                                     |
+| `design_handoff_cairn/Cairn Sistema Web.dc.html` | hoja de tokens y componentes para la web                          |
+| `design_handoff_cairn/Cairn Kit Capturas.dc.html` | los tres encuadres para mostrar la app                           |
+| `design_handoff_cairn_landing/`                | la landing completa en alta fidelidad, con su copy final            |
+| `logo/`                                        | la marca, con `LEEME.md` (resguardo, tamaños mínimos, variantes)     |
+| `support.js`, `image-slot.js`                  | runtime para abrir los `.dc.html` en el navegador; **no es diseño**  |
 
 > **Gráfica es la dirección elegida** (confirmado por Manu el 2026-09-02, tras la
 > reescritura del handoff que reemplazó a "Aliento"). `Cairn Foco.dc.html` queda

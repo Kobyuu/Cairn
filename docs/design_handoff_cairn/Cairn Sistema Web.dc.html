@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  html, body { margin:0; min-height:100%; background:#0b0c0b; }
+  body { color:#e9e4d8; font-family:'IBM Plex Mono',monospace; -webkit-font-smoothing:antialiased; }
+  a { color:oklch(0.76 0.05 150); text-decoration:none; border-bottom:1px solid oklch(0.76 0.05 150 / .3) }
+  a:hover { color:oklch(0.86 0.05 150); border-bottom-color:oklch(0.86 0.05 150 / .6) }
+</style>
+</helmet>
+
+<section style="padding:64px 64px 96px; display:flex; flex-direction:column; gap:56px; max-width:1240px">
+
+  <div style="display:flex; flex-direction:column; gap:12px; max-width:680px">
+    <div style="font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#6d6f70">Cairn · sistema para web</div>
+    <div style="font-family:'Newsreader',Georgia,serif; font-weight:300; font-size:44px; line-height:1.08">Lo que la app no necesitaba y la landing sí</div>
+    <div style="font-size:13px; line-height:1.7; color:#a3a4a4; text-wrap:pretty">La app vive con tres colores y dos tamaños. Una página de venta necesita jerarquía, estados y superficies. Esto lo extiende sin cambiar la identidad: mismos tres tokens de base, más los roles que faltaban.</div>
+  </div>
+
+  <!-- COLOR -->
+  <div style="display:flex; flex-direction:column; gap:20px">
+    <div style="font-size:10px; letter-spacing:.3em; color:#6d6f70">01 · COLOR</div>
+
+    <div style="display:flex; flex-direction:column; gap:10px">
+      <div style="font-size:11px; letter-spacing:.2em; color:#8e8f8f">BASE · heredada de la app</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap">
+        <sc-for list="{{ base }}" as="c" hint-placeholder-count="3">
+          <div style="width:186px; border:1px solid #26272a">
+            <div style="height:76px; background:{{ c.v }}"></div>
+            <div style="padding:11px 12px; display:flex; flex-direction:column; gap:3px">
+              <div style="font-size:11px; letter-spacing:.1em; color:#e9e4d8">{{ c.name }}</div>
+              <div style="font-size:10px; color:#7d7e7f">{{ c.v }}</div>
+              <div style="font-size:9px; color:#5f6061; line-height:1.6">{{ c.use }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:10px">
+      <div style="font-size:11px; letter-spacing:.2em; color:#8e8f8f">SUPERFICIES Y LÍNEAS · derivadas, no colores nuevos</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap">
+        <sc-for list="{{ superficies }}" as="c" hint-placeholder-count="5">
+          <div style="width:186px; border:1px solid #26272a">
+            <div style="height:56px; background:{{ c.v }}"></div>
+            <div style="padding:11px 12px; display:flex; flex-direction:column; gap:3px">
+              <div style="font-size:11px; letter-spacing:.1em; color:#e9e4d8">{{ c.name }}</div>
+              <div style="font-size:9px; color:#7d7e7f; line-height:1.6">{{ c.v }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:10px">
+      <div style="font-size:11px; letter-spacing:.2em; color:#8e8f8f">ESTADOS · el acento se mueve en luminosidad, nunca en tono</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap">
+        <sc-for list="{{ estados }}" as="c" hint-placeholder-count="6">
+          <div style="width:186px; border:1px solid #26272a">
+            <div style="height:56px; background:{{ c.v }}"></div>
+            <div style="padding:11px 12px; display:flex; flex-direction:column; gap:3px">
+              <div style="font-size:11px; letter-spacing:.1em; color:#e9e4d8">{{ c.name }}</div>
+              <div style="font-size:9px; color:#7d7e7f; line-height:1.6">{{ c.v }}</div>
+              <div style="font-size:9px; color:#5f6061; line-height:1.6">{{ c.use }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIPOGRAFÍA -->
+  <div style="display:flex; flex-direction:column; gap:20px">
+    <div style="font-size:10px; letter-spacing:.3em; color:#6d6f70">02 · ESCALA TIPOGRÁFICA</div>
+    <div style="border:1px solid #26272a; display:flex; flex-direction:column">
+      <sc-for list="{{ escala }}" as="t" hint-placeholder-count="7">
+        <div style="display:flex; align-items:baseline; gap:28px; padding:18px 24px; border-bottom:1px solid #1c1d1f">
+          <div style="width:78px; flex:none; font-size:10px; letter-spacing:.18em; color:#6d6f70">{{ t.tag }}</div>
+          <div style="flex:1; min-width:0; font-family:{{ t.fam }}; font-size:{{ t.size }}; font-weight:{{ t.weight }}; line-height:{{ t.lh }}; letter-spacing:{{ t.ls }}; color:#e9e4d8; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ t.sample }}</div>
+          <div style="width:250px; flex:none; font-size:10px; line-height:1.7; color:#7d7e7f; text-align:right">{{ t.spec }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="font-size:11px; line-height:1.8; color:#8e8f8f; max-width:640px">Dos familias, sin excepciones. Newsreader 300 para todo lo que se lee como frase; IBM Plex Mono 400 para etiquetas, datos y microcopy. Nada en negrita: la jerarquía la hace el tamaño y el color, no el peso.</div>
+  </div>
+
+  <!-- COMPONENTES -->
+  <div style="display:flex; flex-direction:column; gap:20px">
+    <div style="font-size:10px; letter-spacing:.3em; color:#6d6f70">03 · COMPONENTES</div>
+    <div style="display:flex; gap:14px; flex-wrap:wrap">
+
+      <div style="width:392px; border:1px solid #26272a; padding:26px; display:flex; flex-direction:column; gap:18px">
+        <div style="font-size:10px; letter-spacing:.24em; color:#6d6f70">BOTONES</div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:12px">
+          <div style="padding:12px 28px; border-radius:999px; background:oklch(0.76 0.05 150); color:#0b0c0b; letter-spacing:.12em; cursor:pointer" style-hover="background:oklch(0.82 0.055 150)">DESCARGAR</div>
+          <div style="padding:12px 22px; border-radius:999px; border:1px solid rgba(233,228,216,.2); color:rgba(233,228,216,.66); letter-spacing:.08em; cursor:pointer" style-hover="background:rgba(233,228,216,.08); border-color:rgba(233,228,216,.34)">VER CÓMO FUNCIONA</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; font-size:12px">
+          <div style="padding:12px 28px; border-radius:999px; background:oklch(0.76 0.05 150); color:#0b0c0b; letter-spacing:.12em; outline:2px solid oklch(0.76 0.05 150 / .35); outline-offset:3px">FOCO TECLADO</div>
+          <div style="padding:12px 22px; border-radius:999px; background:rgba(233,228,216,.1); color:rgba(233,228,216,.34); letter-spacing:.08em">DESHABILITADO</div>
+        </div>
+        <div style="font-size:10px; line-height:1.8; color:#6d6f70">radio 999 · alto 44 · hover sube L +.06 · foco outline 2px al 35% con offset 3</div>
+      </div>
+
+      <div style="width:392px; border:1px solid #26272a; padding:26px; display:flex; flex-direction:column; gap:18px">
+        <div style="font-size:10px; letter-spacing:.24em; color:#6d6f70">CAMPOS Y AVISOS</div>
+        <div style="display:flex; flex-direction:column; gap:9px">
+          <div style="border:1px solid rgba(233,228,216,.18); padding:13px 15px; font-size:12px; color:rgba(233,228,216,.4)">tu@correo.com</div>
+          <div style="border:1px solid oklch(0.76 0.05 150 / .55); padding:13px 15px; font-size:12px; color:#e9e4d8">tu@correo.com<span style="color:oklch(0.76 0.05 150)">|</span></div>
+          <div style="border:1px solid oklch(0.62 0.13 32 / .6); padding:13px 15px; font-size:12px; color:#e9e4d8">correo</div>
+          <div style="font-size:10px; letter-spacing:.06em; color:oklch(0.72 0.12 32)">falta el dominio</div>
+        </div>
+        <div style="font-size:10px; line-height:1.8; color:#6d6f70">sin radio · borde 18% en reposo, acento al 55% en foco, error al 60%</div>
+      </div>
+
+      <div style="width:392px; border:1px solid #26272a; padding:26px; display:flex; flex-direction:column; gap:16px">
+        <div style="font-size:10px; letter-spacing:.24em; color:#6d6f70">TARJETA · para las tres razones</div>
+        <div style="border:1px solid rgba(233,228,216,.12); background:rgba(233,228,216,.03); padding:24px; display:flex; flex-direction:column; gap:12px">
+          <div style="font-size:10px; letter-spacing:.26em; color:oklch(0.76 0.05 150)">01</div>
+          <div style="font-family:'Newsreader',Georgia,serif; font-size:26px; font-weight:300; line-height:1.25">No te apura</div>
+          <div style="font-size:12px; line-height:1.9; color:rgba(233,228,216,.56)">El ciclo no vuelve a contar hasta que confirmás. Si la pausa dura diez minutos, dura diez minutos.</div>
+        </div>
+        <div style="font-size:10px; line-height:1.8; color:#6d6f70">borde 12% · fondo 3% · padding 24 · sin sombra ni radio</div>
+      </div>
+
+      <div style="width:392px; border:1px solid #26272a; padding:26px; display:flex; flex-direction:column; gap:16px">
+        <div style="font-size:10px; letter-spacing:.24em; color:#6d6f70">PRECIO</div>
+        <div style="border:1px solid oklch(0.76 0.05 150 / .4); padding:24px; display:flex; flex-direction:column; gap:14px">
+          <div style="font-size:10px; letter-spacing:.26em; color:oklch(0.76 0.05 150)">LICENCIA ÚNICA</div>
+          <div style="display:flex; align-items:baseline; gap:8px">
+            <div style="font-family:'Newsreader',Georgia,serif; font-size:56px; font-weight:300; line-height:1; font-variant-numeric:tabular-nums">US$ 18</div>
+            <div style="font-size:11px; color:rgba(233,228,216,.44)">una vez</div>
+          </div>
+          <div style="font-size:12px; line-height:1.9; color:rgba(233,228,216,.56)">Sin suscripción. Actualizaciones de la versión 1 incluidas.</div>
+        </div>
+        <div style="font-size:10px; line-height:1.8; color:#6d6f70">cifra en Newsreader 300 · tabular · borde con acento al 40%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRILLA -->
+  <div style="display:flex; flex-direction:column; gap:20px">
+    <div style="font-size:10px; letter-spacing:.3em; color:#6d6f70">04 · GRILLA Y RITMO</div>
+    <div style="border:1px solid #26272a; padding:26px; display:flex; flex-direction:column; gap:20px">
+      <div style="display:flex; gap:10px; height:110px">
+        <sc-for list="{{ columnas }}" as="c" hint-placeholder-count="12">
+          <div style="flex:1; background:rgba(233,228,216,.05); border:1px solid rgba(233,228,216,.08)"></div>
+        </sc-for>
+      </div>
+      <div style="display:flex; gap:36px; flex-wrap:wrap; font-size:11px; line-height:1.9; color:#8e8f8f">
+        <div><span style="color:#6d6f70">ANCHO</span><br>máximo 1240 · texto máximo 680</div>
+        <div><span style="color:#6d6f70">COLUMNAS</span><br>12 · gutter 24 · margen 64 (24 en móvil)</div>
+        <div><span style="color:#6d6f70">SECCIONES</span><br>160 px de aire arriba y abajo · 96 en móvil</div>
+        <div><span style="color:#6d6f70">ESPACIADO</span><br>4 · 8 · 12 · 16 · 24 · 40 · 64 · 96 · 160</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOVIMIENTO -->
+  <div style="display:flex; flex-direction:column; gap:20px">
+    <div style="font-size:10px; letter-spacing:.3em; color:#6d6f70">05 · MOVIMIENTO</div>
+    <div style="display:flex; gap:36px; flex-wrap:wrap; font-size:11px; line-height:1.9; color:#8e8f8f; border:1px solid #26272a; padding:26px">
+      <div><span style="color:#6d6f70">RESPIRACIÓN</span><br>5,5 s ease-in-out · el único ritmo de la marca</div>
+      <div><span style="color:#6d6f70">ENTRADAS</span><br>opacidad 0→1 en 500 ms + 12 px de subida</div>
+      <div><span style="color:#6d6f70">HOVER</span><br>150 ms ease · nunca escala, sólo color</div>
+      <div><span style="color:#6d6f70">PROHIBIDO</span><br>parallax, contadores animados, carruseles automáticos</div>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      base: [
+        { name: "tinta", v: "#E9E4D8", use: "todo el texto sobre fondo oscuro" },
+        { name: "fondo", v: "#0B0C0B", use: "el fondo por defecto de la web" },
+        { name: "acento", v: "oklch(0.76 0.05 150)", use: "una sola acción por pantalla" }
+      ],
+      superficies: [
+        { name: "superficie-1", v: "rgba(233,228,216,.03)" },
+        { name: "superficie-2", v: "rgba(233,228,216,.06)" },
+        { name: "línea-suave", v: "rgba(233,228,216,.12)" },
+        { name: "línea", v: "rgba(233,228,216,.20)" },
+        { name: "papel", v: "#EFECE3" }
+      ],
+      estados: [
+        { name: "acento-hover", v: "oklch(0.82 0.055 150)", use: "botón primario en hover" },
+        { name: "acento-activo", v: "oklch(0.70 0.05 150)", use: "mientras se presiona" },
+        { name: "acento-tenue", v: "oklch(0.76 0.05 150 / .35)", use: "anillo de foco, bordes" },
+        { name: "error", v: "oklch(0.62 0.13 32)", use: "validación de formularios" },
+        { name: "error-texto", v: "oklch(0.72 0.12 32)", use: "el mensaje debajo del campo" },
+        { name: "exito", v: "oklch(0.68 0.09 150)", use: "confirmación de compra" }
+      ],
+      escala: [
+        { tag: "DISPLAY", size: "84px", fam: "'Newsreader',Georgia,serif", weight: 300, lh: "1.02", ls: "-.02em", sample: "Cada 45 minutos, una pausa", spec: "Newsreader 300 · 84/1.02 · -.02em · sólo el héroe" },
+        { tag: "H1", size: "56px", fam: "'Newsreader',Georgia,serif", weight: 300, lh: "1.08", ls: "-.015em", sample: "Tres modos, un solo ciclo", spec: "Newsreader 300 · 56/1.08 · encabezado de sección" },
+        { tag: "H2", size: "34px", fam: "'Newsreader',Georgia,serif", weight: 300, lh: "1.2", ls: "-.01em", sample: "El ciclo no se reinicia solo", spec: "Newsreader 300 · 34/1.2 · subsección" },
+        { tag: "H3", size: "26px", fam: "'Newsreader',Georgia,serif", weight: 300, lh: "1.25", ls: "0", sample: "No te apura", spec: "Newsreader 300 · 26/1.25 · título de tarjeta" },
+        { tag: "CUERPO", size: "17px", fam: "'Newsreader',Georgia,serif", weight: 300, lh: "1.75", ls: "0", sample: "Vuelve a contar recién cuando confirmás que terminaste.", spec: "Newsreader 300 · 17/1.75 · máximo 680 px" },
+        { tag: "CUERPO S", size: "13px", fam: "'IBM Plex Mono',monospace", weight: 400, lh: "1.9", ls: "0", sample: "Windows 10 y 11 · 8 MB · sin cuenta", spec: "Mono 400 · 13/1.9 · datos y notas al pie" },
+        { tag: "ETIQUETA", size: "10px", fam: "'IBM Plex Mono',monospace", weight: 400, lh: "1.6", ls: ".3em", sample: "MODO AMBIENTE", spec: "Mono 400 · 10 · .3em · mayúsculas" }
+      ],
+      columnas: Array.from({ length: 12 }, (_, i) => i)
+    };
+  }
+}
+</script>
+</body>
+</html>

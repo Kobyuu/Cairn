@@ -16,8 +16,6 @@ use tauri::{AppHandle, Emitter, Manager, State};
 pub const EVENT_CHANGED: &str = "timer-changed";
 
 const MS_PER_MIN: u64 = 60_000;
-const DEFAULT_INTERVAL_MIN: u64 = 45;
-const DEFAULT_QUICK_SNOOZE_MIN: u64 = 5;
 /// Tope de 24 h: acota lo que puede mandar el frontend y de paso evita que la
 /// multiplicacion a milisegundos desborde.
 const MAX_MIN: u64 = 24 * 60;
@@ -33,9 +31,11 @@ const POISONED: &str = "el estado del temporizador quedo envenenado";
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum Phase {
-    /// Sin ciclo en curso. Es el estado con el que nace el proceso, antes de
-    /// que `setup()` pueda leer el reloj real.
-    Idle,
+    // No hay `Idle`. Lo hubo mientras el proceso nacia sin haber leido el reloj;
+    // desde que el estado inicial se construye en `setup()` con la hora de pared
+    // real, el ciclo siempre esta en una de estas tres fases y nadie podia
+    // construir `Idle`. Una variante que nada produce es una rama muerta que el
+    // frontend igual tiene que manejar: se borro en vez de taparla.
     /// Contando hacia `deadline_ms` (epoch Unix en ms, hora de pared).
     ///
     /// `cycle_ms` es cuanto dura ESTE ciclo, que no siempre es el intervalo
@@ -125,6 +125,26 @@ pub fn resume(phase: Phase, now_ms: u64) -> Phase {
     }
 }
 
+/// Guarda el intervalo configurado **sin tocar el ciclo en curso**.
+///
+/// Decision de la etapa 3 (SPEC-system-integration): cambiar un ajuste no puede
+/// destruir tiempo ya invertido. El intervalo nuevo empieza a valer en el
+/// proximo `Running` -es decir, al confirmar, posponer o reiniciar-, no en este.
+///
+/// La etapa 2 hacia lo contrario (reiniciaba el ciclo) y por eso necesitaba una
+/// excepcion explicita para `Elapsed`: sin ella, tocar un ajuste borraba una
+/// confirmacion pendiente por la puerta de atras. Al no tocar la fase, esa
+/// excepcion desaparece sola.
+///
+/// Efecto lateral conocido y aceptado: la rama de despertar-tardio de `advance`
+/// mide contra el intervalo VIGENTE, asi que bajar el intervalo y despues
+/// suspender la PC puede convertir en reinicio silencioso un caso que antes
+/// avisaba. Es un borde raro (cambiar el ajuste y suspender en el mismo ciclo) y
+/// blindarlo costaria arrastrar el intervalo con el que nacio cada ciclo.
+pub fn set_interval(state: TimerState, interval_ms: u64) -> TimerState {
+    TimerState { interval_ms, ..state }
+}
+
 /// Arranca un ciclo entero desde cero. Es a la vez "Listo" y "Reiniciar".
 pub fn restart(interval_ms: u64, now_ms: u64) -> Phase {
     Phase::Running {
@@ -162,25 +182,24 @@ pub struct TimerState {
     pub quick_snooze_ms: u64,
 }
 
-impl Default for TimerState {
-    fn default() -> Self {
-        Self {
-            phase: Phase::Idle,
-            interval_ms: DEFAULT_INTERVAL_MIN * MS_PER_MIN,
-            quick_snooze_ms: DEFAULT_QUICK_SNOOZE_MIN * MS_PER_MIN,
-        }
-    }
-}
-
-/// Estado inicial con el ciclo ya arrancado.
+/// Estado inicial con el ciclo ya arrancado, a partir de los ajustes guardados.
 ///
-/// `Default` nace `Idle` porque no se puede leer el reloj en una constante; el
-/// ciclo arranca aca, desde `setup()`, con la hora de pared real.
-pub fn initial_state() -> TimerState {
-    let defaults = TimerState::default();
+/// No hay `impl Default for TimerState`: los valores por defecto viven en
+/// `settings.rs` y entran por aca. Tener ademas un `Default` con un 45 escrito
+/// al lado seria un segundo origen de la verdad que se desincroniza sin que
+/// falle nada -alguien cambia el default en `settings.rs` y este queda viejo-.
+///
+/// Recibe minutos sueltos y no el struct `Settings` a proposito: `timer.rs` no
+/// tiene por que saber que existe un `store.json`. Los dos valores pasan por
+/// `minutes_to_ms`, que es el unico lugar donde se acotan, asi que un 0 o un
+/// numero absurdo escrito a mano en el archivo no puede producir un ciclo que
+/// vence al instante ni desbordar la multiplicacion.
+pub fn initial_state(interval_min: u64, quick_snooze_min: u64) -> TimerState {
+    let interval_ms = minutes_to_ms(interval_min);
     TimerState {
-        phase: restart(defaults.interval_ms, now_ms()),
-        ..defaults
+        phase: restart(interval_ms, now_ms()),
+        interval_ms,
+        quick_snooze_ms: minutes_to_ms(quick_snooze_min),
     }
 }
 
@@ -217,16 +236,78 @@ where
 {
     let now = now_ms();
     let state = app.state::<Mutex<TimerState>>();
-    let snapshot = {
-        let mut guard = state.lock().map_err(|_| POISONED.to_string())?;
-        guard.phase = advance(guard.phase, guard.interval_ms, now);
-        apply(&mut guard, now);
-        *guard
-    };
-    // El lock ya se solto: emitir cruza al webview y no hay razon para tener el
-    // candado tomado mientras tanto.
-    emit_changed(app, snapshot);
+    let mut guard = state.lock().map_err(|_| POISONED.to_string())?;
+
+    let before = guard.phase;
+    guard.phase = advance(guard.phase, guard.interval_ms, now);
+    apply(&mut guard, now);
+    let snapshot = *guard;
+
+    // Se anuncia CON EL LOCK TOMADO, a proposito.
+    //
+    // Soltarlo antes es la version "no tengas el candado mientras cruzas al
+    // webview", y estaria bien si el anuncio fuera idempotente. No lo es: el
+    // orden en que llegan dos anuncios ES el estado que ve la ventana. Con el
+    // lock suelto, el ticker puede escribir `Elapsed`, soltar, ser desalojado, y
+    // que un `timer_reset` -apretar LISTO en ese mismo segundo- entre, escriba
+    // `Running` y anuncie primero; cuando el ticker retoma, anuncia su snapshot
+    // viejo y deja la ventana pintada en `Elapsed` contra un core que esta en
+    // `Running`. Y como el ticker solo emite en transiciones, ese estado podrido
+    // no se corrige hasta el vencimiento siguiente: un intervalo entero de UI
+    // mintiendo.
+    //
+    // Es seguro: ni `emit` ni `run_on_main_thread` vuelven a tomar este Mutex.
+    // El closure que despacha `tray::sync` solo lee `TrayHandles`. Verificado
+    // contra la fuente de `tauri-runtime-wry`, no de memoria.
+    announce(app, before, snapshot);
+
+    drop(guard);
     Ok(snapshot)
+}
+
+/// El punto UNICO por el que sale cualquier cambio de estado hacia afuera.
+///
+/// Existe para que la notificacion no se le escape a nadie. La transicion a
+/// `Elapsed` puede ocurrir en dos lugares: el hilo de 1 Hz y el `advance` que
+/// `mutate` corre antes de cada accion. Si el aviso viviera solo en el ticker,
+/// apretar un boton en el mismo segundo del vencimiento adelantaria la
+/// transicion, el ticker no veria ningun cambio, y el vencimiento pasaria sin
+/// notificacion: el unico momento en que la app tiene que hablar.
+fn announce(app: &AppHandle, before: Phase, snapshot: TimerState) {
+    let just_elapsed = matches!(snapshot.phase, Phase::Elapsed { .. })
+        && !matches!(before, Phase::Elapsed { .. });
+    if just_elapsed {
+        notify_elapsed(app);
+    }
+    emit_changed(app, snapshot);
+    crate::tray::sync(app, snapshot);
+}
+
+/// La notificacion nativa de Windows al vencer.
+///
+/// No hace falta pedir permiso: en escritorio el plugin devuelve `Granted` sin
+/// preguntar. Lo que si hace falta es el identificador propio de la app
+/// (`com.kobyuu.cairn`, fijado en la etapa 1): con el `com.tauri.dev` de
+/// fabrica, Windows descarta el toast sin decir por que.
+///
+/// OJO con el `Err` de abajo: **casi nunca se va a ver**. El plugin hace el
+/// `show()` real adentro de un `spawn`, asi que esta llamada devuelve `Ok(())`
+/// aunque Windows despues descarte el toast. El log sirve para un fallo al
+/// encolar, no para "no aparecio la notificacion": si eso pasa, la consola va a
+/// estar muda y hay que mirar el identificador de la app y los avisos de
+/// Windows, no este mensaje.
+fn notify_elapsed(app: &AppHandle) {
+    use tauri_plugin_notification::NotificationExt;
+
+    let shown = app
+        .notification()
+        .builder()
+        .title("Cairn")
+        .body("Es hora de una pausa.")
+        .show();
+    if let Err(error) = shown {
+        eprintln!("[cairn] no se pudo mostrar la notificacion: {error}");
+    }
 }
 
 /// Avisa a las ventanas. El error se loguea y no se propaga: el `emit` es el
@@ -275,17 +356,34 @@ pub fn timer_snooze(app: AppHandle, minutes: Option<u64>) -> Result<TimerState, 
 
 #[tauri::command]
 pub fn timer_set_interval(app: AppHandle, minutes: u64) -> Result<TimerState, String> {
-    mutate(&app, |state, now| {
-        state.interval_ms = minutes_to_ms(minutes);
-        // Cambiar el intervalo reinicia el ciclo: el deadline viejo se calculo
-        // con el intervalo anterior y ya no significa nada. La excepcion es
-        // `Elapsed`: ahi hay una confirmacion pendiente, y confirmar es lo unico
-        // que justifica la app entera (CLAUDE.md §2). Tocar un ajuste no puede
-        // borrar el vencimiento por la puerta de atras.
-        if !matches!(state.phase, Phase::Elapsed { .. }) {
-            state.phase = restart(state.interval_ms, now);
-        }
-    })
+    let snapshot = mutate(&app, |state, _now| {
+        *state = set_interval(*state, minutes_to_ms(minutes));
+    })?;
+    // Se persiste el valor YA acotado, no el que llego del frontend: asi lo que
+    // queda en `store.json` es exactamente lo que la app esta usando.
+    crate::settings::update(&app, |settings| {
+        settings.interval_min = snapshot.interval_ms / MS_PER_MIN;
+    });
+    Ok(snapshot)
+}
+
+/// Fija cuanto suma el "posponer rapido". Es un AJUSTE, no una accion.
+///
+/// Existe separado de `timer_snooze` justamente porque se parecen y no son lo
+/// mismo: `timer_snooze` abre un ciclo nuevo -mueve el reloj-, y esto solo
+/// cambia el numero que va a usar el proximo posponer. Sin este comando, la
+/// fila de ajustes tenia que llamar a `timer_snooze`, y tocar un ajuste
+/// reiniciaba el ciclo en curso: exactamente lo que la etapa 3 le acaba de
+/// sacar a `timer_set_interval` (CLAUDE.md §2).
+#[tauri::command]
+pub fn timer_set_quick_snooze(app: AppHandle, minutes: u64) -> Result<TimerState, String> {
+    let snapshot = mutate(&app, |state, _now| {
+        state.quick_snooze_ms = minutes_to_ms(minutes);
+    })?;
+    crate::settings::update(&app, |settings| {
+        settings.quick_snooze_min = snapshot.quick_snooze_ms / MS_PER_MIN;
+    });
+    Ok(snapshot)
 }
 
 /// Arranca el hilo que chequea el vencimiento una vez por segundo.
@@ -318,11 +416,15 @@ pub fn spawn_ticker(app: AppHandle) {
         if next == guard.phase {
             continue;
         }
+        let before = guard.phase;
         guard.phase = next;
         let snapshot = *guard;
-        drop(guard);
 
-        emit_changed(&app, snapshot);
+        // Con el lock TOMADO, por el mismo motivo que en `mutate`: soltarlo aca
+        // deja que un comando del usuario se cuele entre la escritura y el
+        // anuncio, y que la ventana termine pintada con el estado viejo.
+        announce(&app, before, snapshot);
+        drop(guard);
     });
 }
 
@@ -497,13 +599,7 @@ mod tests {
     }
 
     #[test]
-    fn idle_stays_idle() {
-        assert_eq!(advance(Phase::Idle, INTERVAL, T0), Phase::Idle);
-    }
-
-    #[test]
     fn pause_is_a_noop_off_running() {
-        assert_eq!(pause(Phase::Idle, T0), Phase::Idle);
         let elapsed = Phase::Elapsed { since_ms: T0 };
         assert_eq!(pause(elapsed, T0), elapsed);
     }
@@ -534,9 +630,6 @@ mod tests {
             })
         );
 
-        let idle = serde_json::to_value(Phase::Idle).expect("idle tiene que serializar");
-        assert_eq!(idle, serde_json::json!({ "kind": "idle" }));
-
         let paused = serde_json::to_value(Phase::Paused { remaining_ms: MIN })
             .expect("paused tiene que serializar");
         assert_eq!(paused, serde_json::json!({ "kind": "paused", "remainingMs": MIN }));
@@ -544,6 +637,54 @@ mod tests {
         let elapsed =
             serde_json::to_value(Phase::Elapsed { since_ms: T0 }).expect("elapsed serializa");
         assert_eq!(elapsed, serde_json::json!({ "kind": "elapsed", "sinceMs": T0 }));
+    }
+
+    #[test]
+    fn changing_the_interval_leaves_the_running_cycle_alone() {
+        // La regla de la etapa 3: cambiar un ajuste NO puede destruir tiempo ya
+        // invertido. El intervalo nuevo aplica al proximo ciclo, no a este.
+        let phase = Phase::Running { deadline_ms: T0 + INTERVAL, cycle_ms: INTERVAL };
+        let state = TimerState { phase, interval_ms: INTERVAL, quick_snooze_ms: 5 * MIN };
+
+        let next = set_interval(state, 5 * MIN);
+
+        assert_eq!(next.phase, phase, "el ciclo en curso no se toca");
+        assert_eq!(next.interval_ms, 5 * MIN, "el intervalo nuevo si se guarda");
+    }
+
+    #[test]
+    fn changing_the_interval_does_not_swallow_a_pending_confirmation() {
+        // El otro lado: vencido sigue vencido. Antes esto necesitaba una
+        // excepcion explicita dentro del comando; ahora sale gratis.
+        let phase = Phase::Elapsed { since_ms: T0 };
+        let state = TimerState { phase, interval_ms: INTERVAL, quick_snooze_ms: 5 * MIN };
+
+        assert_eq!(set_interval(state, 5 * MIN).phase, phase);
+    }
+
+    #[test]
+    fn lowering_the_interval_can_turn_a_warning_into_a_silent_restart() {
+        // Efecto lateral documentado en SPEC-system-integration: `advance` mide
+        // el despertar-tardio contra el intervalo VIGENTE, no contra el que
+        // tenia el ciclo al nacer. Hasta aca vivia solo en un comentario, y sin
+        // test "aceptado a proposito" y "roto sin querer" se ven igual en verde.
+        let phase = Phase::Running { deadline_ms: T0, cycle_ms: INTERVAL };
+        let state = TimerState { phase, interval_ms: INTERVAL, quick_snooze_ms: 5 * MIN };
+
+        let lowered = set_interval(state, 5 * MIN);
+        assert_eq!(lowered.phase, phase, "el ciclo en curso sigue intacto");
+
+        // Se despierta 6 min tarde: mas que el intervalo NUEVO (5) y mucho menos
+        // que el viejo (45), asi que cae en la rama de reinicio silencioso.
+        let now = T0 + 6 * MIN;
+        assert_eq!(
+            advance(lowered.phase, lowered.interval_ms, now),
+            Phase::Running { deadline_ms: now + 5 * MIN, cycle_ms: 5 * MIN }
+        );
+
+        // Control: con el intervalo original vigente, el mismo atraso avisaba.
+        // Prueba que el cambio viene del intervalo y no de otra cosa.
+        assert_eq!(advance(phase, INTERVAL, now), Phase::Elapsed { since_ms: T0 });
     }
 
     #[test]

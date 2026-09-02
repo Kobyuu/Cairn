@@ -14,8 +14,10 @@
       {
         "label": "main",
         "title": "Cairn",
-        "width": 480,
-        "height": 320,
+        "width": 1100,
+        "height": 760,
+        "minWidth": 880,
+        "minHeight": 620,
         "decorations": false,
         "maximizable": false
       }

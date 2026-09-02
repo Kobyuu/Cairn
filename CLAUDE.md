@@ -47,7 +47,12 @@ Este documento contiene las reglas **inquebrantables** del proyecto **Cairn** �
 - **`unsafe` está prohibido** salvo decisión explícita de Manu. Todo lo que necesitamos de Win32 ya está envuelto por Tauri (ver §11).
 - **Idiomas:** código (variables, funciones, archivos) en **inglés**. Documentación y comentarios largos en **español**.
 - **Lint:** `eslint` + `@typescript-eslint` con `--max-warnings 0` para TS; `cargo clippy -- -D warnings` para Rust. Un warning rompe el build. `cargo fmt` y `prettier` no se discuten.
-- **Diseño y estilo visual:** **el diseño real lo trae Manu desde Claude Design** como handoff, en la etapa 6. Hasta entonces la UI es deliberadamente fea y funcional: nada de invertir tiempo en estética que se va a tirar. Cuando llegue el handoff, sus tokens (colores, tipografía, radios, espaciado) van a la config de Tailwind y **se prohíbe hardcodear hex** en los componentes.
+- **Diseño y estilo visual: `docs/DESIGN.md` es NORMATIVO y de lectura obligatoria antes de tocar `src/`.** El handoff de Claude Design ya llegó (`docs/design_handoff_cairn/` y `docs/design_handoff_cairn_landing/`) y `docs/DESIGN.md` es su destilación operativa: dirección visual (**Aliento**), tokens, escala tipográfica, movimiento y las cinco pantallas. Reglas duras que salen de ahí:
+  - **Prohibido hardcodear un color.** Todo sale de los tokens de `src/index.css`. Un color que no existe se agrega como token, no como hex suelto.
+  - **Prohibido `currentColor` dentro de `color-mix`**: no resuelve contra un `color` en línea y rompe el tema claro.
+  - **Nada en negrita** (los pesos son 300 y 400) y **todo número lleva `tabular-nums`**.
+  - Los `.dc.html` del handoff son **referencias**, no código para copiar: se recrea el diseño con React + Tailwind v4.
+  - Ante una contradicción entre `docs/DESIGN.md` y el handoff, gana el handoff y **se corrige `DESIGN.md`**.
   - **Skill `ui-ux-pro-max` (alcance acotado):** solo para movimiento/animación, microinteracciones y patrones de UX. Sus paletas y tipografías **NO se adoptan** — la identidad visual sale del handoff de Claude Design.
 
 ## 6. Flujo de Trabajo y Git (Conventional Commits)
@@ -64,8 +69,8 @@ Este documento contiene las reglas **inquebrantables** del proyecto **Cairn** �
   | Grupo          | Labels disponibles                                                                                                | Cardinalidad                      |
   | -------------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------- |
   | **Naturaleza** | `enhancement` · `chore` · `bug`                                                                                   | exactamente 1                     |
-  | **Etapa**      | `stage:1-bootstrap` · `stage:2-timer` · `stage:3-system` · `stage:4-modes` · `stage:5-routine` · `stage:6-design` | exactamente 1                     |
-  | **Área**       | `area:rust-core` · `area:ui` · `area:windows` · `area:persistence` · `area:build` · `area:testing`                | 1 o más                           |
+  | **Etapa**      | `stage:1-bootstrap` · `stage:2-timer` · `stage:3-system` · `stage:4-modes` · `stage:5-routine` · `stage:6-design` · `stage:landing` | exactamente 1                     |
+  | **Área**       | `area:rust-core` · `area:ui` · `area:windows` · `area:persistence` · `area:build` · `area:testing` · `area:web`   | 1 o más                           |
   | **Prioridad**  | `priority:critical`                                                                                               | solo si bloquea la etapa en curso |
 
   Asignación de área: `area:rust-core` si toca `src-tauri/src/`; `area:ui` si toca `src/`; `area:windows` si toca geometría de ventanas, bandeja, DPI o foco; `area:persistence` si toca `store.json` o `notes/`; `area:build` si toca Vite, Cargo, `tauri.conf.json` o toolchain; `area:testing` si el objetivo principal es escribir o configurar tests.

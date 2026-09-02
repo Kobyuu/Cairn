@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;1,6..72,300&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  html, body { margin:0; height:100%; background:#0b0c0b; }
+  body { -webkit-font-smoothing:antialiased; }
+  a { color:oklch(0.76 0.05 150); text-decoration:none; }
+  a:hover { color:oklch(0.86 0.05 150); }
+</style>
+</helmet>
+
+<div style="width:100vw; height:100vh; background:{{ bg }}; color:{{ fg }}; font-family:'IBM Plex Mono',monospace; display:flex; justify-content:center; overflow:auto; position:relative">
+  <div style="position:absolute; inset:0; background-image:radial-gradient(circle, color-mix(in oklab, {{ fg }} 10%, transparent) .6px, transparent .6px); background-size:3px 3px; opacity:.4; pointer-events:none"></div>
+
+  <div style="width:720px; max-width:calc(100vw - 96px); padding:64px 0 80px; position:relative">
+
+    <div style="display:flex; align-items:flex-end; gap:20px; padding-bottom:26px; border-bottom:1px solid color-mix(in oklab, {{ fg }} 14%, transparent)">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:4px">
+        <div style="width:13px; height:13px; border-radius:50%; background:{{ ac }}"></div>
+        <div style="width:28px; height:9px; border-radius:5px; background:{{ fg }}"></div>
+        <div style="width:44px; height:9px; border-radius:5px; background:{{ fg }}"></div>
+      </div>
+      <div style="font-family:'Newsreader',Georgia,serif; font-weight:300; font-size:44px; line-height:1; letter-spacing:.02em">Ajustes</div>
+      <div style="margin-left:auto; font-size:10px; letter-spacing:.22em; color:color-mix(in oklab, {{ fg }} 34%, transparent)">CAIRN 1.0</div>
+    </div>
+
+    <!-- CICLO -->
+    <div style="font-size:10px; letter-spacing:.3em; color:color-mix(in oklab, {{ fg }} 38%, transparent); margin:44px 0 22px">CICLO</div>
+
+    <div style="display:flex; flex-direction:column; gap:26px">
+      <div style="display:flex; align-items:flex-start; gap:40px">
+        <div style="flex:1; min-width:0">
+          <div style="font-family:'Newsreader',Georgia,serif; font-size:23px; font-weight:300">Duración del intervalo</div>
+          <div style="font-size:11px; color:color-mix(in oklab, {{ fg }} 42%, transparent); margin-top:6px; line-height:1.7">Cada cuánto aparece el aviso, si el ciclo no se pospone.</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; flex:none">
+          <sc-for list="{{ intervalos }}" as="o" hint-placeholder-count="4">
+            <div onClick="{{ o.set }}" style="padding:9px 15px; border:1px solid {{ o.borde }}; background:{{ o.fondo }}; color:{{ o.color }}; font-size:12px; letter-spacing:.06em; cursor:pointer" style-hover="border-color:color-mix(in oklab, {{ fg }} 40%, transparent)">{{ o.label }}</div>
+          </sc-for>
+          <div style="display:flex; align-items:baseline; gap:7px; border:1px solid color-mix(in oklab, {{ fg }} 18%, transparent); padding:9px 12px">
+            <input value="{{ custom }}" onChange="{{ onCustom }}" style="width:34px; background:transparent; border:none; outline:none; color:{{ fg }}; font-family:'IBM Plex Mono',monospace; font-size:12px; text-align:right"></input>
+            <div style="font-size:10px; color:color-mix(in oklab, {{ fg }} 40%, transparent)">MIN</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="height:1px; background:color-mix(in oklab, {{ fg }} 10%, transparent)"></div>
+
+      <div style="display:flex; align-items:flex-start; gap:40px">
+        <div style="flex:1; min-width:0">
+          <div style="font-family:'Newsreader',Georgia,serif; font-size:23px; font-weight:300">Posponer rápido</div>
+          <div style="font-size:11px; color:color-mix(in oklab, {{ fg }} 42%, transparent); margin-top:6px; line-height:1.7">Los minutos del botón directo en la pantalla de aviso.</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; flex:none">
+          <sc-for list="{{ snoozes }}" as="o" hint-placeholder-count="4">
+            <div onClick="{{ o.set }}" style="padding:9px 15px; border:1px solid {{ o.borde }}; background:{{ o.fondo }}; color:{{ o.color }}; font-size:12px; letter-spacing:.06em; cursor:pointer" style-hover="border-color:color-mix(in oklab, {{ fg }} 40%, transparent)">{{ o.label }}</div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODOS -->
+    <div style="font-size:10px; letter-spacing:.3em; color:color-mix(in oklab, {{ fg }} 38%, transparent); margin:48px 0 22px">MODOS</div>
+
+    <div style="display:flex; flex-direction:column; gap:14px">
+      <div style="font-family:'Newsreader',Georgia,serif; font-size:23px; font-weight:300">Modo por defecto</div>
+      <div style="font-size:11px; color:color-mix(in oklab, {{ fg }} 42%, transparent); line-height:1.7">Cómo se muestra Cairn mientras corre el ciclo.</div>
+      <div style="display:flex; gap:12px; margin-top:8px">
+        <div onClick="{{ mAmbiente.set }}" style="flex:1; border:1px solid {{ mAmbiente.borde }}; background:{{ mAmbiente.fondo }}; padding:20px; cursor:pointer; display:flex; flex-direction:column; gap:16px" style-hover="border-color:color-mix(in oklab, {{ fg }} 40%, transparent)">
+          <div style="height:52px; display:flex; align-items:center; justify-content:center">
+            <div style="width:64px; height:40px; border:1px solid color-mix(in oklab, {{ fg }} 18%, transparent); position:relative">
+              <div style="position:absolute; top:0; left:0; width:62%; height:3px; background:{{ ac }}"></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:12px; letter-spacing:.14em; color:{{ mAmbiente.color }}">AMBIENTE</div>
+            <div style="font-size:10px; line-height:1.7; color:color-mix(in oklab, {{ fg }} 38%, transparent); margin-top:5px">Una barra en el borde superior. Nada más.</div>
+          </div>
+        </div>
+        <div onClick="{{ mWidget.set }}" style="flex:1; border:1px solid {{ mWidget.borde }}; background:{{ mWidget.fondo }}; padding:20px; cursor:pointer; display:flex; flex-direction:column; gap:16px" style-hover="border-color:color-mix(in oklab, {{ fg }} 40%, transparent)">
+          <div style="height:52px; display:flex; align-items:center; justify-content:center">
+            <div style="width:64px; height:40px; border:1px solid color-mix(in oklab, {{ fg }} 18%, transparent); position:relative">
+              <div style="position:absolute; right:6px; bottom:6px; width:30px; height:14px; border-radius:2px; background:color-mix(in oklab, {{ fg }} 30%, transparent); border:1px solid color-mix(in oklab, {{ fg }} 40%, transparent)"></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:12px; letter-spacing:.14em; color:{{ mWidget.color }}">WIDGET</div>
+            <div style="font-size:10px; line-height:1.7; color:color-mix(in oklab, {{ fg }} 38%, transparent); margin-top:5px">Ventana chica siempre encima.</div>
+          </div>
+        </div>
+        <div onClick="{{ mFoco.set }}" style="flex:1; border:1px solid {{ mFoco.borde }}; background:{{ mFoco.fondo }}; padding:20px; cursor:pointer; display:flex; flex-direction:column; gap:16px" style-hover="border-color:color-mix(in oklab, {{ fg }} 40%, transparent)">
+          <div style="height:52px; display:flex; align-items:center; justify-content:center">
+            <div style="width:64px; height:40px; border:1px solid color-mix(in oklab, {{ fg }} 18%, transparent); display:flex; align-items:center; justify-content:center">
+              <div style="width:22px; height:22px; border-radius:50%; border:1px solid {{ ac }}"></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:12px; letter-spacing:.14em; color:{{ mFoco.color }}">FOCO</div>
+            <div style="font-size:10px; line-height:1.7; color:color-mix(in oklab, {{ fg }} 38%, transparent); margin-top:5px">Sólo aparece al cumplirse el intervalo.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RUTINA -->
+    <div style="font-size:10px; letter-spacing:.3em; color:color-mix(in oklab, {{ fg }} 38%, transparent); margin:48px 0 22px">RUTINA</div>
+
+    <div style="display:flex; align-items:flex-start; gap:40px">
+      <div style="flex:1; min-width:0">
+        <div style="font-family:'Newsreader',Georgia,serif; font-size:23px; font-weight:300">Corrección de postura</div>
+        <div style="font-size:11px; color:color-mix(in oklab, {{ fg }} 42%, transparent); margin-top:6px; line-height:1.7">5 pasos · markdown · editado hace 3 días</div>
+      </div>
+      <div style="display:flex; gap:8px; flex:none">
+        <div style="padding:10px 18px; border:1px solid color-mix(in oklab, {{ fg }} 20%, transparent); font-size:11px; letter-spacing:.1em; color:color-mix(in oklab, {{ fg }} 70%, transparent); cursor:pointer" style-hover="background:color-mix(in oklab, {{ fg }} 8%, transparent)">EDITAR</div>
+        <div style="padding:10px 14px; border:1px solid color-mix(in oklab, {{ fg }} 20%, transparent); font-size:11px; letter-spacing:.1em; color:color-mix(in oklab, {{ fg }} 44%, transparent); cursor:pointer" style-hover="background:color-mix(in oklab, {{ fg }} 8%, transparent)">ABRIR CARPETA</div>
+      </div>
+    </div>
+
+    <!-- APARIENCIA -->
+    <div style="font-size:10px; letter-spacing:.3em; color:color-mix(in oklab, {{ fg }} 38%, transparent); margin:48px 0 22px">APARIENCIA</div>
+
+    <div style="display:flex; align-items:center; gap:40px">
+      <div style="flex:1; min-width:0">
+        <div style="font-family:'Newsreader',Georgia,serif; font-size:23px; font-weight:300">Tema</div>
+        <div style="font-size:11px; color:color-mix(in oklab, {{ fg }} 42%, transparent); margin-top:6px; line-height:1.7">Ambiente elige su tinta según el fondo de cada ventana.</div>
+      </div>
+      <div style="display:flex; gap:8px; flex:none">
+        <sc-for list="{{ temas }}" as="t" hint-placeholder-count="3">
+          <div onClick="{{ t.set }}" style="padding:9px 15px; border:1px solid {{ t.borde }}; background:{{ t.fondo }}; color:{{ t.color }}; font-size:12px; letter-spacing:.06em; cursor:pointer" style-hover="border-color:color-mix(in oklab, {{ fg }} 40%, transparent)">{{ t.label }}</div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- SISTEMA -->
+    <div style="font-size:10px; letter-spacing:.3em; color:color-mix(in oklab, {{ fg }} 38%, transparent); margin:48px 0 22px">SISTEMA</div>
+
+    <div style="display:flex; flex-direction:column; gap:22px">
+      <sc-for list="{{ switches }}" as="s" hint-placeholder-count="2">
+        <div style="display:flex; align-items:center; gap:40px">
+          <div style="flex:1; min-width:0">
+            <div style="font-family:'Newsreader',Georgia,serif; font-size:23px; font-weight:300">{{ s.label }}</div>
+            <div style="font-size:11px; color:color-mix(in oklab, {{ fg }} 42%, transparent); margin-top:6px; line-height:1.7">{{ s.desc }}</div>
+          </div>
+          <div onClick="{{ s.toggle }}" style="width:52px; height:26px; border-radius:999px; border:1px solid {{ s.borde }}; background:{{ s.pista }}; flex:none; cursor:pointer; display:flex; align-items:center; padding:0 3px; justify-content:{{ s.justify }}">
+            <div style="width:18px; height:18px; border-radius:50%; background:{{ s.punto }}"></div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="height:1px; background:color-mix(in oklab, {{ fg }} 10%, transparent); margin:44px 0 20px"></div>
+    <div style="display:flex; align-items:center; gap:20px; font-size:10px; letter-spacing:.18em; color:color-mix(in oklab, {{ fg }} 26%, transparent)">
+      <div>LOS AJUSTES SE GUARDAN AL INSTANTE</div>
+      <div style="margin-left:auto; cursor:pointer" style-hover="color:color-mix(in oklab, {{ fg }} 60%, transparent)">RESTABLECER TODO</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;tema&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;oscuro&quot;,&quot;claro&quot;],&quot;default&quot;:&quot;oscuro&quot;,&quot;tsType&quot;:&quot;'oscuro' | 'claro'&quot;}}">
+class Component extends DCLogic {
+  state = { dark: null, intervalo: 45, snooze: 5, modo: "ambiente", tema: "sistema", custom: "45", win: true, sonido: false };
+
+  opt(label, active, fg, ac, bg, set) {
+    return {
+      label, set,
+      borde: active ? ac : `color-mix(in oklab, ${fg} 18%, transparent)`,
+      fondo: active ? ac : "transparent",
+      color: active ? bg : `color-mix(in oklab, ${fg} 62%, transparent)`
+    };
+  }
+
+  renderVals() {
+    const dark = this.state.dark ?? (this.props.tema !== "claro");
+    const bg = dark ? "#0b0c0b" : "#efece3";
+    const fg = dark ? "#e9e4d8" : "#1a1c19";
+    const ac = dark ? "oklch(0.76 0.05 150)" : "oklch(0.5 0.05 150)";
+    const mix = p => `color-mix(in oklab, ${fg} ${p}%, transparent)`;
+    const st = this.state;
+    const modo = id => ({
+      borde: st.modo === id ? ac : mix(18),
+      fondo: st.modo === id ? `color-mix(in oklab, ${ac} 12%, transparent)` : "transparent",
+      color: st.modo === id ? ac : mix(70),
+      set: () => this.setState({ modo: id })
+    });
+
+    const sw = (key, label, desc) => {
+      const on = st[key];
+      return {
+        label, desc,
+        borde: on ? ac : mix(22),
+        pista: on ? `color-mix(in oklab, ${ac} 22%, transparent)` : "transparent",
+        punto: on ? ac : mix(34),
+        justify: on ? "flex-end" : "flex-start",
+        toggle: () => this.setState(p => ({ [key]: !p[key] }))
+      };
+    };
+
+    return {
+      bg, fg, ac, custom: st.custom,
+      intervalos: [25, 45, 60, 90].map(n => this.opt(String(n), st.intervalo === n, fg, ac, bg, () => this.setState({ intervalo: n, custom: String(n) }))),
+      snoozes: [2, 5, 10, 15].map(n => this.opt(String(n), st.snooze === n, fg, ac, bg, () => this.setState({ snooze: n }))),
+      mAmbiente: modo("ambiente"), mWidget: modo("widget"), mFoco: modo("foco"),
+      temas: [["sistema", "SISTEMA"], ["claro", "CLARO"], ["oscuro", "OSCURO"]].map(([id, label]) =>
+        this.opt(label, st.tema === id, fg, ac, bg, () => this.setState({ tema: id, dark: id === "oscuro" ? true : id === "claro" ? false : dark }))),
+      switches: [
+        sw("win", "Iniciar con Windows", "Cairn arranca minimizado en el modo por defecto."),
+        sw("sonido", "Sonido al avisar", "Un tono corto y grave. Apagado por defecto.")
+      ],
+      onCustom: e => {
+        const v = e.target.value.replace(/[^0-9]/g, "").slice(0, 3);
+        const n = parseInt(v, 10);
+        this.setState({ custom: v, intervalo: isNaN(n) ? this.state.intervalo : n });
+      },
+      toggleTema: () => this.setState(p => ({ dark: !(p.dark ?? (this.props.tema !== "claro")) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

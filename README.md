@@ -78,7 +78,9 @@ cargo test  --manifest-path src-tauri/Cargo.toml
 | [`docs/architecture.md`](docs/architecture.md)                       | Las decisiones D1–D9 y por qué se tomaron                       |
 | [`docs/specs/CAPABILITY-MAP.md`](docs/specs/CAPABILITY-MAP.md)       | Los seis módulos, su orden de construcción y las reglas comunes |
 | [`docs/specs/`](docs/specs/)                                         | Una spec por etapa, con criterios de aceptación y tests         |
-| [`docs/design_handoff_cairn_foco/`](docs/design_handoff_cairn_foco/) | Handoff visual de Claude Design (dirección "Aliento")           |
+| [`docs/DESIGN.md`](docs/DESIGN.md)                                   | **Sistema de diseño, normativo.** Lectura obligatoria antes de tocar `src/` |
+| [`docs/design_handoff_cairn/`](docs/design_handoff_cairn/)           | Handoff de Claude Design: las cuatro pantallas, la marca, el sistema web y el kit de capturas |
+| [`docs/design_handoff_cairn_landing/`](docs/design_handoff_cairn_landing/) | Handoff de la landing, en alta fidelidad y con el copy final |
 | [`CLAUDE.md`](CLAUDE.md)                                             | Reglas del agente: flujo de trabajo, subagentes, herramientas   |
 
 ## Hoja de ruta

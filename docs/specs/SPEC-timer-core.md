@@ -34,7 +34,7 @@ Tres decisiones que no se negocian:
 
 ### Conflicto resuelto con el handoff de diseño
 
-`docs/design_handoff_cairn_foco/README.md` §State Management propone
+`docs/design_handoff_cairn/README.md` §State Management propone
 `cycleStartedAt` y define posponer como `cycleStartedAt = now - (interval - n)`.
 **No se implementa así.** Es un rodeo para reusar un solo campo; con
 `deadline_ms` posponer es `deadline = now + n`, sin resta inversa ni riesgo de

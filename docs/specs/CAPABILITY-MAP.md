@@ -55,6 +55,27 @@ Test Rust:  cargo test --manifest-path src-tauri/Cargo.toml
 Los cinco de verificación (`lint`, `typecheck`, `test`, `clippy`, `cargo test`)
 tienen que estar en verde antes de cerrar cualquier etapa.
 
+**Dos trampas del build en Windows, descubiertas en la etapa 3:**
+
+1. **Clippy necesita su propio target dir.** Compartir `src-tauri/target/` con
+   `cargo build`/`cargo test` deja stubs de metadatos y el comando siguiente
+   falla con `only metadata stub found for rlib dependency 'core'`, que parece un
+   toolchain roto y no lo es. Correr clippy así:
+
+   ```
+   CARGO_TARGET_DIR=src-tauri/target-clippy cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+   ```
+
+2. **`src-tauri/.cargo/config.toml` sube la pila de rustc a 256 MB.** Sin eso,
+   rustc muere compilando el crate `windows` con `STATUS_STACK_BUFFER_OVERRUN`
+   (0xc0000409). El síntoma engaña: cuando rustc muere a mitad de escribir un
+   `.rmeta`, el crate que depende de ese metadato falla después con errores de
+   resolución de macros que no tienen nada que ver
+   (`cannot determine resolution for the macro ::core::concat`,
+   `import resolution is stuck`). **Siempre buscar el ICE de más arriba, no la
+   cascada.** El archivo está commiteado, así que no hay que exportar nada; si
+   alguna vez vuelve a fallar, subir el número.
+
 ## 3. Estructura del proyecto
 
 ```

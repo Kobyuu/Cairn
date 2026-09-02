@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+  html, body { margin:0; height:100%; background:#12191a; }
+  body { -webkit-font-smoothing:antialiased; }
+  a { color:#c14b36; text-decoration:none; }
+  a:hover { color:#d9694f; }
+  @keyframes cairnPulse { 0%,100% { opacity:.3 } 50% { opacity:.85 } }
+  @keyframes cairnRise { 0% { transform:translateY(0) } 100% { transform:translateY(-6px) } }
+</style>
+</helmet>
+
+<div style="width:100vw; height:100vh; background:{{ bg }}; color:{{ fg }}; position:relative; overflow:hidden; font-family:'IBM Plex Mono',monospace; display:flex; align-items:center; justify-content:center; padding:0 clamp(56px,7vw,96px); box-sizing:border-box">
+
+  <div style="position:absolute; inset:0; background-image:radial-gradient(circle, color-mix(in oklab, {{ fg }} 16%, transparent) .7px, transparent .7px); background-size:4px 4px; opacity:.5; pointer-events:none"></div>
+  <div style="position:absolute; inset:0; background:radial-gradient(ellipse at 50% 40%, transparent 45%, color-mix(in oklab, {{ bg }} 70%, transparent) 100%); pointer-events:none"></div>
+
+  <div style="position:absolute; top:40px; left:40px; width:10px; height:10px; border-left:1px solid color-mix(in oklab, {{ fg }} 30%, transparent); border-top:1px solid color-mix(in oklab, {{ fg }} 30%, transparent)"></div>
+  <div style="position:absolute; top:40px; right:40px; width:10px; height:10px; border-right:1px solid color-mix(in oklab, {{ fg }} 30%, transparent); border-top:1px solid color-mix(in oklab, {{ fg }} 30%, transparent)"></div>
+  <div style="position:absolute; bottom:40px; left:40px; width:10px; height:10px; border-left:1px solid color-mix(in oklab, {{ fg }} 30%, transparent); border-bottom:1px solid color-mix(in oklab, {{ fg }} 30%, transparent)"></div>
+  <div style="position:absolute; bottom:40px; right:40px; width:10px; height:10px; border-right:1px solid color-mix(in oklab, {{ fg }} 30%, transparent); border-bottom:1px solid color-mix(in oklab, {{ fg }} 30%, transparent)"></div>
+
+  <div onClick="{{ toggleTema }}" title="Cambiar tema" style="position:absolute; top:38px; right:72px; width:14px; height:14px; border:1px solid color-mix(in oklab, {{ fg }} 32%, transparent); cursor:pointer" style-hover="background:{{ ac }}"></div>
+
+  <div style="position:absolute; left:44px; top:0; bottom:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:26px">
+    <div style="width:1px; height:70px; background:color-mix(in oklab, {{ fg }} 18%, transparent)"></div>
+    <div style="writing-mode:vertical-rl; font-size:11px; letter-spacing:.42em; color:color-mix(in oklab, {{ fg }} 44%, transparent)">CORRECCIÓN DE POSTURA</div>
+    <div style="width:7px; height:7px; background:{{ ac }}; animation:cairnPulse 5.5s ease-in-out infinite"></div>
+    <div style="writing-mode:vertical-rl; font-size:11px; letter-spacing:.42em; color:color-mix(in oklab, {{ fg }} 26%, transparent)">CICLO 45 MIN · PAUSA 6</div>
+    <div style="width:1px; height:70px; background:color-mix(in oklab, {{ fg }} 18%, transparent)"></div>
+  </div>
+
+  <div style="display:flex; align-items:stretch; gap:clamp(28px,4vw,64px); max-width:1180px; width:100%; box-sizing:border-box">
+
+    <div style="display:flex; flex-direction:column; gap:14px; width:min(460px,42%); flex:none; min-width:0">
+      <div style="border:1px solid color-mix(in oklab, {{ fg }} 34%, transparent); padding:9px; background:color-mix(in oklab, {{ fg }} 4%, transparent)">
+        <div style="position:relative; width:100%; height:clamp(170px,33vh,330px); border:1px solid color-mix(in oklab, {{ fg }} 16%, transparent)">
+          <image-slot id="cairn-estampa-a" shape="rect" fit="cover" placeholder="estampa de la rutina · vertical"></image-slot>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:9px; font-size:9px; letter-spacing:.26em; color:color-mix(in oklab, {{ fg }} 42%, transparent)">
+          <div>LÁMINA I</div>
+          <div>ESTIRAMIENTO CERVICAL</div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:14px">
+        <div style="flex:1; border:1px solid color-mix(in oklab, {{ fg }} 34%, transparent); padding:9px; background:color-mix(in oklab, {{ fg }} 4%, transparent)">
+          <div style="position:relative; width:100%; height:clamp(80px,14vh,132px); border:1px solid color-mix(in oklab, {{ fg }} 16%, transparent)">
+            <image-slot id="cairn-estampa-b" shape="rect" fit="cover" placeholder="segunda lámina"></image-slot>
+          </div>
+          <div style="margin-top:9px; font-size:9px; letter-spacing:.26em; color:color-mix(in oklab, {{ fg }} 42%, transparent)">LÁMINA II · HOMBROS</div>
+        </div>
+        <div style="width:clamp(96px,11vw,132px); flex:none; border:1px solid {{ ac }}; background:{{ ac }}; color:{{ bg }}; padding:12px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:space-between">
+          <div style="font-size:9px; letter-spacing:.26em">PAUSA</div>
+          <div style="font-family:'Newsreader',Georgia,serif; font-size:clamp(28px,4.4vh,42px); font-weight:300; line-height:1; letter-spacing:-.02em; font-variant-numeric:tabular-nums">06</div>
+          <div style="font-size:9px; letter-spacing:.2em">DE HOY</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center; min-width:0">
+      <div style="display:flex; align-items:center; gap:14px; font-size:10px; letter-spacing:.34em; color:color-mix(in oklab, {{ fg }} 40%, transparent)">
+        <div style="width:38px; height:1px; background:color-mix(in oklab, {{ fg }} 26%, transparent)"></div>
+        <div>ES HORA DE LA PAUSA</div>
+      </div>
+
+      <div style="font-family:'Newsreader',Georgia,serif; font-size:clamp(64px,11.5vw,172px); font-weight:300; line-height:.9; letter-spacing:-.03em; font-variant-numeric:tabular-nums; margin-top:14px">{{ crono }}</div>
+      <div style="font-family:'Newsreader',Georgia,serif; font-style:italic; font-size:clamp(14px,1.6vw,20px); color:color-mix(in oklab, {{ fg }} 50%, transparent); margin-top:10px">llevás en pausa · el ciclo espera tu confirmación</div>
+
+      <div style="height:1px; background:color-mix(in oklab, {{ fg }} 18%, transparent); margin:clamp(18px,4vh,40px) 0 clamp(14px,3vh,28px)"></div>
+
+      <div style="display:flex; align-items:stretch; border:1px solid color-mix(in oklab, {{ fg }} 24%, transparent); font-size:clamp(10px,1.05vw,12px); width:max-content; flex-wrap:wrap">
+        <div style="padding:15px clamp(22px,3.4vw,42px); background:{{ ac }}; color:{{ bg }}; letter-spacing:.18em; cursor:pointer" style-hover="filter:brightness(1.08)">LISTO</div>
+        <div style="padding:15px clamp(13px,1.8vw,22px); border-left:1px solid color-mix(in oklab, {{ fg }} 24%, transparent); color:color-mix(in oklab, {{ fg }} 68%, transparent); letter-spacing:.1em; cursor:pointer" style-hover="background:color-mix(in oklab, {{ fg }} 8%, transparent)">POSPONER 5</div>
+        <div style="padding:16px 13px; border-left:1px solid color-mix(in oklab, {{ fg }} 24%, transparent); color:color-mix(in oklab, {{ fg }} 40%, transparent); font-size:9px; cursor:pointer" style-hover="background:color-mix(in oklab, {{ fg }} 8%, transparent)">▾</div>
+        <div style="padding:15px clamp(13px,1.8vw,22px); border-left:1px solid color-mix(in oklab, {{ fg }} 24%, transparent); color:color-mix(in oklab, {{ fg }} 68%, transparent); letter-spacing:.1em; cursor:pointer" style-hover="background:color-mix(in oklab, {{ fg }} 8%, transparent)">VER RUTINA</div>
+      </div>
+
+      <div style="margin-top:clamp(12px,2.4vh,22px); font-size:10px; letter-spacing:.22em; color:color-mix(in oklab, {{ fg }} 26%, transparent)">MANTENÉ POSPONER PARA ELEGIR LOS MINUTOS</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;tema&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;oscuro&quot;,&quot;claro&quot;],&quot;default&quot;:&quot;oscuro&quot;,&quot;tsType&quot;:&quot;'oscuro' | 'claro'&quot;}}">
+class Component extends DCLogic {
+  state = { s: 84, dark: null };
+  componentDidMount() { this.t = setInterval(() => this.setState(p => ({ s: p.s + 1 })), 1000); }
+  componentWillUnmount() { clearInterval(this.t); }
+  renderVals() {
+    const dark = this.state.dark ?? (this.props.tema !== "claro");
+    const mm = String(Math.floor(this.state.s / 60)).padStart(2, "0");
+    const ss = String(this.state.s % 60).padStart(2, "0");
+    return {
+      crono: mm + ":" + ss,
+      bg: dark ? "#12191a" : "#f2ede2",
+      fg: dark ? "#e4dfd2" : "#17201f",
+      ac: dark ? "#c14b36" : "#a83a26",
+      toggleTema: () => this.setState(p => ({ dark: !(p.dark ?? (this.props.tema !== "claro")) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

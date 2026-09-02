@@ -4,9 +4,20 @@ dist-ssr/
 *.local
 .vite/
 src-tauri/target/
+# Target aparte para clippy: compartir `target/` con `cargo build` hace que
+# clippy deje stubs de metadatos y el build siguiente falle con
+# "only metadata stub found for rlib dependency `core`".
+src-tauri/target-clippy/
 src-tauri/gen/schemas/
 .env
 .env.*.local
 .claude/settings.local.json
+# La marca vive UNA sola vez, en `assets/logo/`, que es lo que referencia
+# docs/DESIGN.md. Cada handoff de Claude Design trae adentro su propia copia
+# identica (~85 archivos cada una, verificado con `diff -r`): sin esto la marca
+# se commitea tres veces, y otra vez mas con cada handoff nuevo que llegue.
+# Los archivos siguen en disco, solo no entran a git.
+docs/design_handoff_*/logo/
+
 Thumbs.db
 graphify-out/

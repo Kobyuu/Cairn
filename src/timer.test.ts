@@ -47,11 +47,6 @@ describe("remainingMs", () => {
     expect(remainingMs(phase, 999_999)).toBe(7_000);
   });
 
-  it("idle: always zero", () => {
-    const phase: Phase = { kind: "idle" };
-    expect(remainingMs(phase, 123)).toBe(0);
-  });
-
   it("elapsed: always zero (it has no remaining time, it counts up instead)", () => {
     const phase: Phase = { kind: "elapsed", sinceMs: 5_000 };
     expect(remainingMs(phase, 6_000)).toBe(0);
@@ -76,10 +71,9 @@ describe("elapsedMs", () => {
     expect(later).toBeGreaterThan(early);
   });
 
-  it("running/paused/idle: always zero", () => {
+  it("running/paused: always zero", () => {
     expect(elapsedMs({ kind: "running", deadlineMs: 10_000 }, 20_000)).toBe(0);
     expect(elapsedMs({ kind: "paused", remainingMs: 10_000 }, 20_000)).toBe(0);
-    expect(elapsedMs({ kind: "idle" }, 20_000)).toBe(0);
   });
 });
 

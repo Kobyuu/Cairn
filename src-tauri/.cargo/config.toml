@@ -1,0 +1,18 @@
+# Pila del COMPILADOR, no de Cairn.
+#
+# Los crates que entran con los plugins de la etapa 3 -`windows` (medio WinRT,
+# via el plugin de notificaciones), `tauri-utils`, `muda`- son lo bastante
+# grandes como para que rustc 1.98 desborde su propia pila al analizarlos en
+# Windows y muera con STATUS_STACK_BUFFER_OVERRUN (0xc0000409).
+#
+# El sintoma enganya: cuando rustc muere a mitad de escribir un `.rmeta`, el
+# crate que depende de ese metadato falla despues con errores de resolucion que
+# no tienen nada que ver ("cannot determine resolution for the macro
+# `::core::concat`", "import resolution is stuck"). Perseguir esos errores es
+# perseguir la cascada; la causa es siempre el ICE de mas arriba.
+#
+# Va en el repo y no como variable de entorno suelta para que `pnpm tauri dev`
+# ande en cualquier terminal sin que nadie tenga que acordarse de exportarla.
+[env]
+# 256 MB. Medido, no elegido a ojo: con 64 MB `windows` seguia desbordando.
+RUST_MIN_STACK = "268435456"
