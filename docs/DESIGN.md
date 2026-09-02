@@ -78,11 +78,24 @@ Dos familias, y ninguna más:
 Escala web (siete pasos): Display 84/1.02 · H1 56/1.08 · H2 34/1.2 · H3 26/1.25 ·
 Cuerpo 17/1.75 · Cuerpo S 13/1.9 (Mono) · Etiqueta 10 con `.3em` (Mono).
 
-> **Pendiente conocido:** las dos fuentes tienen que ir **empaquetadas locales**
-> en el build. Cairn no hace red (CLAUDE.md §2), así que el `@import` de Google
-> Fonts que traen los `.dc.html` y los SVG de marca **no puede entrar a la app**.
-> Hasta que estén los archivos, el stack cae a `Georgia, serif` y
-> `ui-monospace`. Ver §7.
+Las dos van **empaquetadas locales**, vía `@fontsource-variable/newsreader` y
+`@fontsource/ibm-plex-mono`: los `.woff2` viven en el bundle y la app no le pide
+nada a ninguna red al arrancar (CLAUDE.md §2). Por eso el `@import` de Google
+Fonts que traen los `.dc.html` y los SVG de marca **no puede entrar a la app** —
+en la landing sí está bien.
+
+De Newsreader se usa la variante **`opsz`**, la que trae el eje de tamaño óptico
+que pide el handoff (`opsz 6..72`). No es un lujo: el mismo tipo se usa a 196 px
+en el cronómetro y a 19 px en la sobre-línea, y sin ese eje el trazo fino se
+rompe en el tamaño chico. La familia se llama `Newsreader Variable`.
+
+> **Costo medido y aceptado:** el bundle lleva **628 KB** de fuentes en 11
+> archivos, de los cuales unos 330 KB son subsets (latin-ext, cirílico, griego,
+> vietnamita) que el español nunca carga — el navegador solo pide `latin` por el
+> `unicode-range`, pero los archivos igual viajan en el `.exe`. Recortarlos exige
+> escribir los `@font-face` a mano contra rutas internas del paquete, que se
+> rompen en el próximo `pnpm update`. Si el tamaño del instalador llega a
+> importar, ese es el camino.
 
 ### Espaciado y grilla (web)
 
@@ -234,7 +247,7 @@ El trabajo está seguido en el issue [#3](https://github.com/Kobyuu/Cairn/issues
 | Ajustes                        | **Parcial**: CICLO (intervalo y posponer rápido) y SISTEMA (autostart). Faltan MODOS, RUTINA y APARIENCIA |
 | Rutina                         | Etapa 5                                                       |
 | Widget · Ambiente              | Etapa 4                                                       |
-| Fuentes empaquetadas           | **Pendiente**, necesita el OK de Manu (§2)                     |
+| Fuentes empaquetadas           | **Hecho** — Newsreader Variable (eje `opsz`) + IBM Plex Mono 400 |
 | Landing                        | Issue #3                                                      |
 
 **Adaptación de Foco a la etapa 3, anotada:** el handoff dibuja Foco en su estado
