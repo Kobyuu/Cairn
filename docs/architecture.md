@@ -104,13 +104,19 @@ DPI — todo en físicos:
 let m = app.primary_monitor()?.unwrap();
 let s = m.scale_factor();
 win.set_position(PhysicalPosition::new(m.position().x, m.position().y))?;
-win.set_size(PhysicalSize::new(m.size().width, (4.0 * s).round() as u32))?;
+win.set_size(PhysicalSize::new(m.size().width, (h_css * s).round() as u32))?;
 ```
 
 `Monitor` da `position()`/`size()` en físicos más `scale_factor()`. Con
 `LogicalSize`, Tauri multiplica por la escala *de la ventana en ese momento*,
-que puede no ser todavía la del monitor destino. El alto de 4px se multiplica
-a mano para que sean 4 px visuales al 100% y al 150%.
+que puede no ser todavía la del monitor destino. El alto se multiplica a mano
+para que mida lo mismo al 100% y al 150%.
+
+**`h_css` sale del handoff de diseño, no del brief original.** El brief pedía
+4 px fijos; `docs/design_handoff_cairn_foco/README.md` (dirección "Aliento",
+aprobada, posterior) fija **3 px** normalmente y **5 px en el último 10% del
+ciclo**, respirando con la curva `breathe` de 5,5 s. Gana el handoff: es una
+decisión visual y es la más reciente. Lo que no cambia es la aritmética de DPI.
 
 Config de la ventana: `transparent`, `decorations: false`, `shadow: false`,
 `skipTaskbar: true`, `alwaysOnTop: true`, `focus: false`, `resizable: false`,

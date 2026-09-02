@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@300;400;500&family=Newsreader:opsz,wght@6..72,300;6..72,400&display=swap" rel="stylesheet">
+<style>
+  html { background:#0d0d0e; }
+  body { margin:0; background:#0d0d0e; min-height:100%; color:#e8e8e6; font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#9db4c8; text-decoration:none; border-bottom:1px solid rgba(157,180,200,.35); }
+  a:hover { color:#c6d6e4; }
+  @keyframes cairnBreathe { 0%,100% { opacity:.55 } 50% { opacity:1 } }
+  @keyframes cairnRing { 0%,100% { transform:scale(.86); opacity:.32 } 50% { transform:scale(1.06); opacity:.8 } }
+  @keyframes cairnRing2 { 0%,100% { transform:scale(1); opacity:.18 } 50% { transform:scale(1.22); opacity:.5 } }
+  @keyframes cairnTide { 0% { height:18% } 100% { height:86% } }
+  @keyframes cairnDrift { 0% { transform:translateX(0) } 100% { transform:translateX(-50%) } }
+  @keyframes cairnBlink { 0%,45% { opacity:1 } 55%,100% { opacity:.15 } }
+  @keyframes cairnFill { 0% { width:8% } 100% { width:97% } }
+  @keyframes cairnSweep { 0% { transform:translateX(-100%) } 100% { transform:translateX(340%) } }
+  @keyframes cairnHalo { 0%,100% { transform:scale(.9); opacity:.28 } 50% { transform:scale(1.08); opacity:.62 } }
+  @keyframes cairnWash { 0%,100% { transform:scale(1); opacity:.5 } 50% { transform:scale(1.14); opacity:.85 } }
+  @keyframes cairnTurn { 0% { transform:rotate(0deg) } 100% { transform:rotate(360deg) } }
+</style>
+</helmet>
+
+<section style="padding:72px 64px 48px; display:flex; flex-direction:column; gap:40px">
+  <div style="display:flex; align-items:flex-end; gap:40px; flex-wrap:wrap">
+    <div style="display:flex; flex-direction:column; gap:14px; max-width:720px">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#6d6f70">Cairn · turno 3 · Aliento, terminado</div>
+      <div style="font-family:'Newsreader',Georgia,serif; font-weight:300; font-size:46px; line-height:1.08; letter-spacing:-.01em">Aliento, llevado hasta el final</div>
+      <div style="font-size:15px; line-height:1.6; color:#a3a4a4; max-width:660px; text-wrap:pretty">Misma idea de 2a, ahora con la materialidad completa: hueso sobre casi-negro, grano fino, viñeta, hairlines de encuadre y tres halos desfasados. El botón de tema de abajo también controla esta pantalla.</div>
+    </div>
+    <div onClick="{{ toggleTema }}" style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.1em; padding:11px 18px; border:1px solid #3a3a3b; color:#dededc; cursor:pointer; user-select:none; display:flex; align-items:center; gap:10px" style-hover="border-color:#77787a; background:#191a1b">
+      <div style="width:9px; height:9px; border-radius:50%; background:currentColor"></div>
+      <div>{{ temaLabel }}</div>
+    </div>
+  </div>
+
+  <div id="3a" style="display:flex; flex-direction:column; gap:16px; width:1120px">
+    <div style="display:flex; align-items:baseline; gap:14px">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em; padding:4px 8px; border:1px solid #3a3a3b; color:#c9c9c7">3a</div>
+      <div style="font-family:'Newsreader',Georgia,serif; font-weight:300; font-size:26px">Aliento · Foco</div>
+      <div style="font-size:13px; color:#8e8f8f">1120 × 700 · todo CSS: gradientes, grano por background-size, keyframes</div>
+    </div>
+
+    <div style="width:1120px; height:700px; background:{{ dBg }}; color:{{ dFg }}; position:relative; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:'Newsreader',Georgia,serif">
+      <div style="position:absolute; width:900px; height:900px; border-radius:50%; background:radial-gradient(circle, color-mix(in oklab, {{ dFg }} 9%, transparent) 0%, transparent 62%); animation:cairnWash 11s ease-in-out infinite"></div>
+      <div style="position:absolute; width:660px; height:660px; border-radius:50%; border:1px solid color-mix(in oklab, {{ dFg }} 13%, transparent); animation:cairnHalo 5.5s ease-in-out infinite"></div>
+      <div style="position:absolute; width:520px; height:520px; border-radius:50%; border:1px solid color-mix(in oklab, {{ dFg }} 10%, transparent); animation:cairnHalo 5.5s ease-in-out infinite .7s"></div>
+      <div style="position:absolute; width:400px; height:400px; border-radius:50%; border:1px solid color-mix(in oklab, {{ dFg }} 8%, transparent); animation:cairnHalo 5.5s ease-in-out infinite 1.4s"></div>
+      <div style="position:absolute; width:212px; height:212px; border-radius:50%; border-top:1px solid color-mix(in oklab, {{ dAc }} 55%, transparent); animation:cairnTurn 45s linear infinite"></div>
+      <div style="position:absolute; inset:0; background-image:radial-gradient(circle, color-mix(in oklab, {{ dFg }} 12%, transparent) .6px, transparent .6px); background-size:3px 3px; opacity:.5; pointer-events:none"></div>
+      <div style="position:absolute; inset:0; background:radial-gradient(ellipse at center, transparent 42%, color-mix(in oklab, {{ dBg }} 82%, transparent) 100%); pointer-events:none"></div>
+
+      <div style="position:absolute; top:34px; left:44px; width:9px; height:9px; border-left:1px solid color-mix(in oklab, {{ dFg }} 25%, transparent); border-top:1px solid color-mix(in oklab, {{ dFg }} 25%, transparent)"></div>
+      <div style="position:absolute; top:34px; right:44px; width:9px; height:9px; border-right:1px solid color-mix(in oklab, {{ dFg }} 25%, transparent); border-top:1px solid color-mix(in oklab, {{ dFg }} 25%, transparent)"></div>
+      <div style="position:absolute; bottom:34px; left:44px; width:9px; height:9px; border-left:1px solid color-mix(in oklab, {{ dFg }} 25%, transparent); border-bottom:1px solid color-mix(in oklab, {{ dFg }} 25%, transparent)"></div>
+      <div style="position:absolute; bottom:34px; right:44px; width:9px; height:9px; border-right:1px solid color-mix(in oklab, {{ dFg }} 25%, transparent); border-bottom:1px solid color-mix(in oklab, {{ dFg }} 25%, transparent)"></div>
+
+      <div style="position:absolute; top:46px; left:0; right:0; display:flex; align-items:center; justify-content:center; gap:18px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.34em; color:color-mix(in oklab, {{ dFg }} 38%, transparent)">
+        <div style="width:56px; height:1px; background:color-mix(in oklab, {{ dFg }} 22%, transparent)"></div>
+        <div>CORRECCIÓN DE POSTURA</div>
+        <div style="width:56px; height:1px; background:color-mix(in oklab, {{ dFg }} 22%, transparent)"></div>
+      </div>
+
+      <div style="position:relative; display:flex; flex-direction:column; align-items:center">
+        <div style="font-style:italic; font-size:19px; color:color-mix(in oklab, {{ dFg }} 52%, transparent); letter-spacing:.01em">llevás en pausa</div>
+        <div style="font-size:196px; font-weight:300; line-height:.92; letter-spacing:-.025em; font-variant-numeric:tabular-nums; margin-top:6px">{{ crono }}</div>
+        <div style="display:flex; align-items:center; gap:14px; margin-top:20px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.3em; color:color-mix(in oklab, {{ dFg }} 34%, transparent)">
+          <div style="width:5px; height:5px; border-radius:50%; background:{{ dAc }}; animation:cairnBreathe 5.5s ease-in-out infinite"></div>
+          <div>INHALAR · EXHALAR</div>
+        </div>
+      </div>
+
+      <div style="position:relative; display:flex; align-items:center; gap:12px; margin-top:76px; font-family:'IBM Plex Mono',monospace; font-size:12px">
+        <div style="padding:12px 34px; border-radius:999px; background:{{ dAc }}; color:{{ dBg }}; letter-spacing:.14em" style-hover="filter:brightness(1.1)">LISTO</div>
+        <div style="display:flex; align-items:stretch; border:1px solid color-mix(in oklab, {{ dFg }} 20%, transparent); border-radius:999px; overflow:hidden; color:color-mix(in oklab, {{ dFg }} 66%, transparent)">
+          <div style="padding:12px 18px; letter-spacing:.06em" style-hover="background:color-mix(in oklab, {{ dFg }} 8%, transparent)">posponer 5</div>
+          <div style="width:1px; background:color-mix(in oklab, {{ dFg }} 20%, transparent)"></div>
+          <div style="padding:12px 13px; font-size:9px" style-hover="background:color-mix(in oklab, {{ dFg }} 8%, transparent)">▾</div>
+        </div>
+        <div style="padding:12px 20px; border:1px solid color-mix(in oklab, {{ dFg }} 20%, transparent); border-radius:999px; color:color-mix(in oklab, {{ dFg }} 66%, transparent); letter-spacing:.06em" style-hover="background:color-mix(in oklab, {{ dFg }} 8%, transparent)">ver rutina</div>
+      </div>
+
+      <div style="position:absolute; bottom:52px; left:0; right:0; text-align:center; font-style:italic; font-size:14px; color:color-mix(in oklab, {{ dFg }} 30%, transparent)">mantené posponer para elegir los minutos</div>
+    </div>
+
+    <div style="display:flex; gap:16px">
+      <div style="width:320px; height:120px; background:{{ dBg }}; color:{{ dFg }}; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; gap:16px; border-radius:4px">
+        <div style="position:absolute; width:210px; height:210px; border-radius:50%; background:radial-gradient(circle, color-mix(in oklab, {{ dFg }} 10%, transparent), transparent 65%); animation:cairnHalo 5.5s ease-in-out infinite"></div>
+        <div style="position:absolute; inset:0; background-image:radial-gradient(circle, color-mix(in oklab, {{ dFg }} 12%, transparent) .6px, transparent .6px); background-size:3px 3px; opacity:.45"></div>
+        <div style="font-size:52px; font-weight:300; position:relative; letter-spacing:-.02em">27</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.24em; color:color-mix(in oklab, {{ dFg }} 42%, transparent); position:relative; line-height:1.9">MIN<br>RESTANTES</div>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column; gap:10px">
+        <div style="height:55px; background:#eae7dd; position:relative; overflow:hidden; border-radius:3px">
+          <div style="position:absolute; top:0; left:0; height:3px; background:oklch(0.5 0.05 150 / .5); animation:cairnFill 9s linear infinite"></div>
+          <div style="position:absolute; bottom:8px; left:12px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#9b988e">ambiente sobre claro · 3px, tinta oscura al 50%</div>
+        </div>
+        <div style="height:55px; background:#16171a; position:relative; overflow:hidden; border-radius:3px">
+          <div style="position:absolute; top:0; left:0; height:5px; width:94%; background:oklch(0.82 0.06 150 / .85); animation:cairnBreathe 5.5s ease-in-out infinite"></div>
+          <div style="position:absolute; bottom:8px; left:12px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#74736d">último 10% · 5px y respira con el halo</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding:48px 64px 48px; display:flex; flex-direction:column; gap:44px; border-top:1px solid #262728">
+  <div style="display:flex; align-items:flex-end; gap:40px; flex-wrap:wrap">
+    <div style="display:flex; flex-direction:column; gap:14px; max-width:720px">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#6d6f70">Cairn · turno 2 · el tiempo como materia</div>
+      <div style="font-family:'Newsreader',Georgia,serif; font-weight:300; font-size:46px; line-height:1.08; letter-spacing:-.01em">Tres direcciones donde algo se mueve todo el tiempo</div>
+      <div style="font-size:15px; line-height:1.6; color:#a3a4a4; max-width:660px; text-wrap:pretty">Nada de pantallas quietas: en las tres, el ciclo tiene una forma física que respira, sube o avanza. El cronómetro sigue siendo lo más grande de la pantalla, pero ahora ocurre dentro de algo. El botón de tema cambia las tres a la vez.</div>
+    </div>
+    <div onClick="{{ toggleTema }}" style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.1em; padding:11px 18px; border:1px solid #3a3a3b; color:#dededc; cursor:pointer; user-select:none; display:flex; align-items:center; gap:10px" style-hover="border-color:#77787a; background:#191a1b">
+      <div style="width:9px; height:9px; border-radius:50%; background:currentColor"></div>
+      <div>{{ temaLabel }}</div>
+    </div>
+  </div>
+
+  <div style="display:flex; flex-wrap:wrap; gap:40px; align-items:flex-start">
+
+    <!-- ============ 2a · ALIENTO ============ -->
+    <div id="2a" style="display:flex; flex-direction:column; gap:16px; width:760px">
+      <div style="display:flex; align-items:baseline; gap:14px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em; padding:4px 8px; border:1px solid #3a3a3b; color:#c9c9c7">2a</div>
+        <div style="font-family:'Newsreader',Georgia,serif; font-weight:300; font-size:26px">Aliento</div>
+        <div style="font-size:13px; color:#8e8f8f; line-height:1.5; max-width:400px">Dos halos concéntricos respiran a 5,5 segundos por ciclo, el ritmo de una respiración lenta. Mirar la pantalla te desacelera antes de que leas nada.</div>
+      </div>
+
+      <div style="width:760px; height:452px; background:{{ aBg }}; color:{{ aFg }}; position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; font-family:'Newsreader',Georgia,serif">
+        <div style="position:absolute; width:520px; height:520px; border-radius:50%; border:1px solid color-mix(in oklab, {{ aFg }} 22%, transparent); animation:cairnRing2 5.5s ease-in-out infinite"></div>
+        <div style="position:absolute; width:340px; height:340px; border-radius:50%; background:radial-gradient(circle, color-mix(in oklab, {{ aFg }} 12%, transparent) 0%, transparent 70%); animation:cairnRing 5.5s ease-in-out infinite"></div>
+        <div style="position:absolute; top:24px; left:0; right:0; display:flex; justify-content:space-between; padding:0 30px; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em; color:color-mix(in oklab, {{ aFg }} 45%, transparent)">
+          <div>CORRECCIÓN DE POSTURA</div>
+          <div>PAUSA EN CURSO</div>
+        </div>
+
+        <div style="font-size:148px; font-weight:300; line-height:.9; letter-spacing:-.02em; font-variant-numeric:tabular-nums; position:relative">{{ crono }}</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.2em; color:color-mix(in oklab, {{ aFg }} 40%, transparent); margin-top:14px; position:relative">INHALAR · EXHALAR</div>
+
+        <div style="display:flex; align-items:center; gap:10px; margin-top:52px; font-family:'IBM Plex Mono',monospace; font-size:12px; position:relative">
+          <div style="padding:9px 24px; border-radius:999px; background:{{ aAc }}; color:{{ aBg }}; letter-spacing:.08em" style-hover="filter:brightness(1.12)">LISTO</div>
+          <div style="display:flex; align-items:stretch; border:1px solid color-mix(in oklab, {{ aFg }} 22%, transparent); border-radius:999px; overflow:hidden">
+            <div style="padding:9px 14px; color:color-mix(in oklab, {{ aFg }} 70%, transparent)" style-hover="background:color-mix(in oklab, {{ aFg }} 8%, transparent)">posponer 5</div>
+            <div style="width:1px; background:color-mix(in oklab, {{ aFg }} 22%, transparent)"></div>
+            <div style="padding:9px 11px; font-size:9px; color:color-mix(in oklab, {{ aFg }} 45%, transparent)" style-hover="background:color-mix(in oklab, {{ aFg }} 8%, transparent)">▾</div>
+          </div>
+          <div style="padding:9px 16px; border:1px solid color-mix(in oklab, {{ aFg }} 22%, transparent); border-radius:999px; color:color-mix(in oklab, {{ aFg }} 70%, transparent)" style-hover="background:color-mix(in oklab, {{ aFg }} 8%, transparent)">ver rutina</div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:16px">
+        <div style="width:300px; background:{{ aBg }}; color:{{ aFg }}; height:96px; display:flex; align-items:center; justify-content:center; gap:14px; font-family:'Newsreader',Georgia,serif; position:relative; overflow:hidden">
+          <div style="position:absolute; width:150px; height:150px; border-radius:50%; background:radial-gradient(circle, color-mix(in oklab, {{ aFg }} 10%, transparent), transparent 70%); animation:cairnRing 5.5s ease-in-out infinite"></div>
+          <div style="font-size:40px; font-weight:300; position:relative">27</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.16em; color:color-mix(in oklab, {{ aFg }} 45%, transparent); position:relative">MIN<br>RESTANTES</div>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; gap:8px">
+          <div style="height:44px; background:#eceae6; position:relative; overflow:hidden">
+            <div style="position:absolute; top:0; left:0; height:3px; background:oklch(0.58 0.06 150 / .5); animation:cairnFill 9s linear infinite"></div>
+            <div style="position:absolute; bottom:6px; left:10px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#9c9a95">ambiente sobre claro · crece 3→5px</div>
+          </div>
+          <div style="height:44px; background:#1b1a19; position:relative; overflow:hidden">
+            <div style="position:absolute; top:0; left:0; height:5px; width:94%; background:oklch(0.78 0.08 150 / .85); animation:cairnBreathe 5.5s ease-in-out infinite"></div>
+            <div style="position:absolute; bottom:6px; left:10px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#78766f">último 10% · la barra respira igual que el halo</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 2b · MAREA ============ -->
+    <div id="2b" style="display:flex; flex-direction:column; gap:16px; width:760px">
+      <div style="display:flex; align-items:baseline; gap:14px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em; padding:4px 8px; border:1px solid #3a3a3b; color:#c9c9c7">2b</div>
+        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-weight:500; font-size:25px; letter-spacing:-.02em">Marea</div>
+        <div style="font-size:13px; color:#8e8f8f; line-height:1.5; max-width:400px">Un nivel de color sube por la pantalla y las cifras se invierten donde lo cruza. El ciclo entero es un solo gesto y no hace falta explicarlo.</div>
+      </div>
+
+      <div style="width:760px; height:452px; background:{{ bBg }}; color:{{ bFg }}; position:relative; overflow:hidden; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
+        <div style="position:absolute; left:0; right:0; bottom:0; background:{{ bAc }}; opacity:.9; animation:cairnTide 11s ease-in-out infinite alternate"></div>
+        <div style="position:absolute; inset:0; display:flex; flex-direction:column; padding:30px 40px 96px; box-sizing:border-box; mix-blend-mode:difference; color:#fff">
+          <div style="display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em">
+            <div>CORRECCIÓN DE POSTURA</div>
+            <div>PAUSA</div>
+          </div>
+          <div style="margin-top:auto; font-size:176px; font-weight:500; letter-spacing:-.06em; line-height:.82; font-variant-numeric:tabular-nums">{{ crono }}</div>
+        </div>
+        <div style="position:absolute; bottom:28px; right:40px; display:flex; align-items:center; gap:10px; font-family:'IBM Plex Mono',monospace; font-size:12px">
+          <div style="padding:9px 24px; background:{{ bFg }}; color:{{ bBg }}; letter-spacing:.08em" style-hover="filter:brightness(.92)">LISTO</div>
+          <div style="display:flex; align-items:stretch; background:color-mix(in oklab, {{ bBg }} 70%, transparent); border:1px solid color-mix(in oklab, {{ bFg }} 28%, transparent)">
+            <div style="padding:9px 13px" style-hover="background:color-mix(in oklab, {{ bFg }} 10%, transparent)">posponer 5</div>
+            <div style="width:1px; background:color-mix(in oklab, {{ bFg }} 28%, transparent)"></div>
+            <div style="padding:9px 11px; font-size:9px" style-hover="background:color-mix(in oklab, {{ bFg }} 10%, transparent)">▾</div>
+          </div>
+          <div style="padding:9px 14px; background:color-mix(in oklab, {{ bBg }} 70%, transparent); border:1px solid color-mix(in oklab, {{ bFg }} 28%, transparent)" style-hover="background:color-mix(in oklab, {{ bFg }} 10%, transparent)">ver rutina</div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:16px">
+        <div style="width:300px; height:96px; background:{{ bBg }}; color:{{ bFg }}; position:relative; overflow:hidden; display:flex; align-items:flex-end">
+          <div style="position:absolute; left:0; right:0; bottom:0; background:{{ bAc }}; opacity:.85; animation:cairnTide 11s ease-in-out infinite alternate"></div>
+          <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; mix-blend-mode:difference; color:#fff; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:34px; font-weight:500; letter-spacing:-.04em">27 min</div>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; gap:8px">
+          <div style="height:44px; background:#e9eaeb; position:relative; overflow:hidden">
+            <div style="position:absolute; top:0; left:0; height:3px; background:oklch(0.5 0.07 250 / .55); animation:cairnFill 9s linear infinite"></div>
+            <div style="position:absolute; bottom:6px; left:10px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#9aa0a4">el borde se moja de izquierda a derecha</div>
+          </div>
+          <div style="height:44px; background:#111318; position:relative; overflow:hidden">
+            <div style="position:absolute; top:0; left:0; height:5px; width:94%; background:oklch(0.72 0.11 250 / .95)"></div>
+            <div style="position:absolute; top:0; left:0; width:70px; height:5px; background:linear-gradient(to right, transparent, #fff, transparent); opacity:.5; animation:cairnSweep 3.4s ease-in-out infinite"></div>
+            <div style="position:absolute; bottom:6px; left:10px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#70767f">último 10% · un reflejo recorre la barra</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 2c · CINTA ============ -->
+    <div id="2c" style="display:flex; flex-direction:column; gap:16px; width:760px">
+      <div style="display:flex; align-items:baseline; gap:14px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em; padding:4px 8px; border:1px solid #3a3a3b; color:#c9c9c7">2c</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:24px; letter-spacing:-.02em">cinta</div>
+        <div style="font-size:13px; color:#8e8f8f; line-height:1.5; max-width:400px">Tipografía cinética: el nombre de la rutina desfila lentísimo detrás de las cifras y los dos puntos late una vez por segundo. Movimiento constante, casi nulo.</div>
+      </div>
+
+      <div style="width:760px; height:452px; background:{{ cBg }}; color:{{ cFg }}; position:relative; overflow:hidden; font-family:'IBM Plex Mono',monospace; display:flex; flex-direction:column; justify-content:center">
+        <div style="position:absolute; top:0; left:0; right:0; height:56px; overflow:hidden; display:flex; align-items:center; border-bottom:1px solid color-mix(in oklab, {{ cFg }} 12%, transparent)">
+          <div style="display:flex; gap:48px; white-space:nowrap; animation:cairnDrift 42s linear infinite; font-size:13px; letter-spacing:.34em; color:color-mix(in oklab, {{ cFg }} 32%, transparent)">
+            <div>CORRECCIÓN DE POSTURA</div><div>SEXTA PAUSA DE HOY</div><div>INTERVALO 45 MIN</div><div>CORRECCIÓN DE POSTURA</div><div>SEXTA PAUSA DE HOY</div><div>INTERVALO 45 MIN</div>
+          </div>
+        </div>
+
+        <div style="padding:0 48px; display:flex; align-items:baseline; gap:4px; font-size:172px; font-weight:300; letter-spacing:-.07em; line-height:.86; font-variant-numeric:tabular-nums">
+          <div>{{ crono }}</div>
+        </div>
+        <div style="padding:0 48px; margin-top:18px; display:flex; align-items:center; gap:12px; font-size:11px; letter-spacing:.18em; color:color-mix(in oklab, {{ cFg }} 40%, transparent)">
+          <div style="width:7px; height:7px; background:{{ cAc }}; animation:cairnBlink 1s steps(1,end) infinite"></div>
+          <div>TIEMPO EN PAUSA</div>
+        </div>
+
+        <div style="position:absolute; bottom:0; left:0; right:0; border-top:1px solid color-mix(in oklab, {{ cFg }} 12%, transparent); display:flex; align-items:stretch; font-size:12px">
+          <div style="padding:15px 30px; background:{{ cAc }}; color:{{ cBg }}; letter-spacing:.1em" style-hover="filter:brightness(1.1)">LISTO</div>
+          <div style="padding:15px 20px; border-right:1px solid color-mix(in oklab, {{ cFg }} 12%, transparent); color:color-mix(in oklab, {{ cFg }} 70%, transparent)" style-hover="background:color-mix(in oklab, {{ cFg }} 7%, transparent)">posponer 5</div>
+          <div style="padding:15px 14px; border-right:1px solid color-mix(in oklab, {{ cFg }} 12%, transparent); color:color-mix(in oklab, {{ cFg }} 45%, transparent)" style-hover="background:color-mix(in oklab, {{ cFg }} 7%, transparent)">+ min ▾</div>
+          <div style="margin-left:auto; padding:15px 24px; border-left:1px solid color-mix(in oklab, {{ cFg }} 12%, transparent); color:color-mix(in oklab, {{ cFg }} 70%, transparent)" style-hover="background:color-mix(in oklab, {{ cFg }} 7%, transparent)">ver rutina ▾</div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:16px">
+        <div style="width:300px; height:96px; background:{{ cBg }}; color:{{ cFg }}; display:flex; align-items:center; gap:12px; padding:0 20px; box-sizing:border-box; font-family:'IBM Plex Mono',monospace; border:1px solid color-mix(in oklab, {{ cFg }} 14%, transparent)">
+          <div style="width:7px; height:7px; background:{{ cAc }}; animation:cairnBlink 1s steps(1,end) infinite"></div>
+          <div style="font-size:34px; font-weight:300; letter-spacing:-.05em">27:10</div>
+          <div style="font-size:10px; letter-spacing:.14em; color:color-mix(in oklab, {{ cFg }} 40%, transparent); margin-left:auto; text-align:right">PAUSAR<br>MODO</div>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; gap:8px">
+          <div style="height:44px; background:#efece6; position:relative; overflow:hidden">
+            <div style="position:absolute; top:0; left:0; height:3px; background:oklch(0.6 0.08 40 / .5); animation:cairnFill 9s linear infinite"></div>
+            <div style="position:absolute; bottom:6px; left:10px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#9d9890">avance en pasos de 1% · sin easing</div>
+          </div>
+          <div style="height:44px; background:#141312; position:relative; overflow:hidden">
+            <div style="position:absolute; top:0; left:0; height:5px; width:94%; background:oklch(0.76 0.1 40 / .9)"></div>
+            <div style="position:absolute; top:0; right:0; width:4px; height:5px; background:#fff; animation:cairnBlink 1s steps(1,end) infinite"></div>
+            <div style="position:absolute; bottom:6px; left:10px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#79736c">último 10% · el extremo parpadea 1/seg</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section style="padding:40px 64px 96px; display:flex; flex-direction:column; gap:48px; border-top:1px solid #262728">
+  <div style="display:flex; flex-direction:column; gap:14px; max-width:760px">
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#6d6f70">Cairn · turno 1 · direcciones visuales</div>
+    <div style="font-family:'Instrument Serif',Georgia,serif; font-size:44px; line-height:1.1; letter-spacing:-.01em">Tres maneras de que una app que está siempre abierta se sienta calma</div>
+    <div style="font-size:15px; line-height:1.6; color:#a3a4a4; max-width:640px; text-wrap:pretty">Cada dirección muestra lo mismo: pantalla de Foco, widget, barra Ambiente sobre fondo claro y oscuro, y el par claro/oscuro de la paleta. Todavía no es la app: es la voz visual. Elegí una (o partes de dos) y sigo con las cinco pantallas completas.</div>
+  </div>
+
+  <div style="display:flex; flex-wrap:wrap; gap:40px; align-items:flex-start">
+
+    <!-- ================= 1a · PAPEL ================= -->
+    <div id="1a" style="display:flex; flex-direction:column; gap:16px; width:760px">
+      <div style="display:flex; align-items:baseline; gap:14px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em; padding:4px 8px; border:1px solid #3a3a3b; color:#c9c9c7">1a</div>
+        <div style="font-family:'Instrument Serif',Georgia,serif; font-size:26px">Papel</div>
+        <div style="font-size:13px; color:#8e8f8f; line-height:1.5; max-width:420px">Serif de libro, blancos cálidos, tinta marrón. La pausa se lee como una página, no como una notificación.</div>
+      </div>
+
+      <!-- Foco -->
+      <div style="width:760px; height:452px; background:#f7f4ef; color:#1f1c18; position:relative; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:56px; box-sizing:border-box; overflow:hidden">
+        <div style="position:absolute; top:0; left:0; right:0; height:3px; background:oklch(0.62 0.06 55)"></div>
+        <div style="position:absolute; top:26px; left:32px; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em; color:#a09789">CAIRN</div>
+        <div style="position:absolute; top:26px; right:32px; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em; color:#a09789">EN PAUSA · 45 MIN</div>
+
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#a09789">Corrección de postura</div>
+        <div style="font-family:'Instrument Serif',Georgia,serif; font-size:170px; line-height:.9; letter-spacing:-.03em; font-variant-numeric:tabular-nums; margin-top:10px">{{ crono }}</div>
+
+        <div style="display:flex; align-items:center; gap:10px; margin-top:44px; font-family:'IBM Plex Mono',monospace; font-size:12px">
+          <div style="padding:8px 20px; background:#1f1c18; color:#f7f4ef; letter-spacing:.08em">LISTO</div>
+          <div style="display:flex; align-items:stretch; border:1px solid #d8d0c2; color:#6b6459">
+            <div style="padding:8px 14px">posponer 5</div>
+            <div style="width:1px; background:#d8d0c2"></div>
+            <div style="display:flex; align-items:center; padding:0 9px; color:#a09789; font-size:9px">▾</div>
+          </div>
+          <div style="padding:8px 14px; border:1px solid #d8d0c2; color:#6b6459">ver rutina</div>
+        </div>
+      </div>
+
+      <!-- palette + widget + ambiente -->
+      <div style="display:flex; gap:16px; align-items:stretch">
+        <div style="width:236px; background:#171512; padding:20px; box-sizing:border-box; display:flex; flex-direction:column; gap:14px">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.16em; color:#6f675c">OSCURO</div>
+          <div style="font-family:'Instrument Serif',Georgia,serif; font-size:30px; color:#ece7df; line-height:1.1">Corrección<br>de postura</div>
+          <div style="display:flex; gap:6px; margin-top:auto">
+            <div style="width:26px; height:26px; background:#f7f4ef"></div>
+            <div style="width:26px; height:26px; background:#171512; border:1px solid #3a352e"></div>
+            <div style="width:26px; height:26px; background:oklch(0.62 0.06 55)"></div>
+          </div>
+        </div>
+
+        <div style="flex:1; display:flex; flex-direction:column; gap:16px">
+          <div style="background:#22201d; padding:22px; display:flex; gap:18px; align-items:center">
+            <div style="background:rgba(247,244,239,.92); color:#1f1c18; padding:14px 22px; display:flex; align-items:baseline; gap:10px; box-shadow:0 8px 24px rgba(0,0,0,.35)">
+              <div style="font-family:'Instrument Serif',Georgia,serif; font-size:34px; line-height:1">27</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#8f887c; letter-spacing:.1em">MIN</div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#8a8378; line-height:1.6">widget · siempre encima<br>hover: pausar / modo</div>
+          </div>
+          <div style="display:flex; gap:16px">
+            <div style="flex:1; height:74px; background:#eceae6; position:relative">
+              <div style="position:absolute; top:0; left:0; width:68%; height:4px; background:oklch(0.62 0.06 55 / .55)"></div>
+              <div style="position:absolute; bottom:8px; left:10px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#9c968b">ambiente · 68%</div>
+            </div>
+            <div style="flex:1; height:74px; background:#1b1a19; position:relative">
+              <div style="position:absolute; top:0; left:0; width:94%; height:5px; background:oklch(0.72 0.09 55 / .9); animation:cairnBreathe 2.6s ease-in-out infinite"></div>
+              <div style="position:absolute; bottom:8px; left:10px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#77716a">último 10% · respira</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 1b · CONSOLA ================= -->
+    <div id="1b" style="display:flex; flex-direction:column; gap:16px; width:760px">
+      <div style="display:flex; align-items:baseline; gap:14px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em; padding:4px 8px; border:1px solid #3a3a3b; color:#c9c9c7">1b</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:24px; letter-spacing:-.02em">consola</div>
+        <div style="font-size:13px; color:#8e8f8f; line-height:1.5; max-width:420px">Todo monoespaciado y en minúscula, grises fríos, una sola línea de acento. Precisa y sin adornos; la calma viene del silencio, no de la suavidad.</div>
+      </div>
+
+      <div style="width:760px; height:452px; background:#eceded; color:#22262a; position:relative; display:flex; flex-direction:column; justify-content:flex-end; padding:48px; box-sizing:border-box; font-family:'IBM Plex Mono',monospace; overflow:hidden">
+        <div style="position:absolute; top:48px; left:48px; font-size:11px; letter-spacing:.18em; color:#8d9296">CAIRN · 06</div>
+        <div style="position:absolute; top:44px; right:48px; font-size:11px; letter-spacing:.18em; color:#8d9296">PAUSA EN CURSO</div>
+
+        <div style="font-size:11px; letter-spacing:.18em; color:#8d9296; text-transform:uppercase; margin-bottom:8px">corrección de postura</div>
+        <div style="font-size:150px; letter-spacing:-.06em; line-height:.86; font-weight:300; font-variant-numeric:tabular-nums">{{ crono }}</div>
+
+        <div style="height:1px; background:#d3d6d8; margin:34px 0 22px"></div>
+        <div style="display:flex; align-items:center; gap:18px; font-size:12px">
+          <div style="background:#22262a; color:#eceded; letter-spacing:.1em; padding:8px 22px">LISTO</div>
+          <div style="display:flex; align-items:center; gap:8px; color:#3d444a">
+            <div style="border:1px solid #cfd3d6; padding:8px 12px">posponer 5</div>
+            <div style="border:1px solid #cfd3d6; padding:8px 10px; color:#6d747a">otro…</div>
+          </div>
+          <div style="margin-left:auto; border:1px solid #cfd3d6; padding:8px 12px; color:#6d747a">rutina ▾</div>
+        </div>
+        <div style="position:absolute; bottom:0; left:0; width:100%; height:2px; background:oklch(0.62 0.06 230)"></div>
+      </div>
+
+      <div style="display:flex; gap:16px; align-items:stretch">
+        <div style="width:236px; background:#191c1f; padding:20px; box-sizing:border-box; display:flex; flex-direction:column; gap:14px; font-family:'IBM Plex Mono',monospace">
+          <div style="font-size:10px; letter-spacing:.16em; color:#666d73">OSCURO</div>
+          <div style="font-size:26px; color:#d7dbde; letter-spacing:-.03em; line-height:1.15">corrección<br>de postura</div>
+          <div style="display:flex; gap:6px; margin-top:auto">
+            <div style="width:26px; height:26px; background:#eceded"></div>
+            <div style="width:26px; height:26px; background:#191c1f; border:1px solid #33383c"></div>
+            <div style="width:26px; height:26px; background:oklch(0.62 0.06 230)"></div>
+          </div>
+        </div>
+
+        <div style="flex:1; display:flex; flex-direction:column; gap:16px">
+          <div style="background:#20242a; padding:22px; display:flex; gap:18px; align-items:center">
+            <div style="background:rgba(25,28,31,.82); border:1px solid rgba(215,219,222,.18); color:#d7dbde; padding:12px 18px; font-family:'IBM Plex Mono',monospace; display:flex; align-items:baseline; gap:8px">
+              <div style="font-size:26px; letter-spacing:-.04em">27:10</div>
+              <div style="width:6px; height:6px; background:oklch(0.62 0.06 230); border-radius:50%"></div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#7e858b; line-height:1.6">widget · el punto marca el modo<br>arrastre: el marco se vuelve línea</div>
+          </div>
+          <div style="display:flex; gap:16px">
+            <div style="flex:1; height:74px; background:#e9eaeb; position:relative">
+              <div style="position:absolute; top:0; left:0; width:68%; height:3px; background:oklch(0.5 0.05 230 / .5)"></div>
+              <div style="position:absolute; bottom:8px; left:10px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#9aa0a4">68%</div>
+            </div>
+            <div style="flex:1; height:74px; background:#181a1c; position:relative">
+              <div style="position:absolute; top:0; left:0; width:94%; height:5px; background:oklch(0.7 0.11 230 / .95)"></div>
+              <div style="position:absolute; top:0; left:94%; width:6px; height:5px; background:#eceded"></div>
+              <div style="position:absolute; bottom:8px; left:10px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#71787d">último 10% · cabeza clara</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 1c · AIRE ================= -->
+    <div id="1c" style="display:flex; flex-direction:column; gap:16px; width:760px">
+      <div style="display:flex; align-items:baseline; gap:14px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em; padding:4px 8px; border:1px solid #3a3a3b; color:#c9c9c7">1c</div>
+        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:25px; font-weight:500; letter-spacing:-.02em">Aire</div>
+        <div style="font-size:13px; color:#8e8f8f; line-height:1.5; max-width:420px">Grotesca grande, casi blanco, todo alineado a la izquierda y desplazado hacia abajo. Máximo vacío: la pantalla completa se siente vacía, no invasiva.</div>
+      </div>
+
+      <div style="width:760px; height:452px; background:#fbfbfa; color:#16181a; position:relative; display:flex; flex-direction:column; padding:56px 64px; box-sizing:border-box; overflow:hidden">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:#a8a9a7">Pausa · corrección de postura</div>
+        <div style="margin-top:auto; font-size:158px; font-weight:500; letter-spacing:-.055em; line-height:.86; font-variant-numeric:tabular-nums">{{ crono }}</div>
+        <div style="display:flex; align-items:center; gap:10px; margin-top:40px; font-size:13px">
+          <div style="background:#16181a; color:#fbfbfa; font-weight:500; padding:9px 24px; border-radius:2px">Listo</div>
+          <div style="border:1px solid #e2e2e0; color:#4b4f54; padding:9px 14px; border-radius:2px">Posponer 5 min</div>
+          <div style="border:1px solid #e2e2e0; color:#82858a; padding:9px 12px; border-radius:2px">Otro</div>
+          <div style="margin-left:auto; border:1px solid #e2e2e0; color:#82858a; padding:9px 14px; border-radius:2px">Ver rutina</div>
+        </div>
+        <div style="position:absolute; top:0; left:0; width:100%; height:4px; background:linear-gradient(to right, oklch(0.68 0.06 90) 0%, oklch(0.68 0.06 90) 100%); opacity:.7"></div>
+      </div>
+
+      <div style="display:flex; gap:16px; align-items:stretch">
+        <div style="width:236px; background:#101112; padding:20px; box-sizing:border-box; display:flex; flex-direction:column; gap:14px">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.16em; color:#6b6d6f">OSCURO</div>
+          <div style="font-size:28px; font-weight:500; letter-spacing:-.03em; color:#f2f2f0; line-height:1.1">Corrección de postura</div>
+          <div style="display:flex; gap:6px; margin-top:auto">
+            <div style="width:26px; height:26px; background:#fbfbfa"></div>
+            <div style="width:26px; height:26px; background:#101112; border:1px solid #2f3031"></div>
+            <div style="width:26px; height:26px; background:oklch(0.68 0.06 90)"></div>
+          </div>
+        </div>
+
+        <div style="flex:1; display:flex; flex-direction:column; gap:16px">
+          <div style="background:#1b1c1d; padding:22px; display:flex; gap:18px; align-items:center">
+            <div style="background:rgba(251,251,250,.06); border:1px solid rgba(251,251,250,.14); backdrop-filter:blur(6px); color:#f2f2f0; padding:12px 20px; border-radius:3px; display:flex; align-items:baseline; gap:8px">
+              <div style="font-size:30px; font-weight:500; letter-spacing:-.04em">27</div>
+              <div style="font-size:12px; color:rgba(242,242,240,.55)">min</div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#7d7f81; line-height:1.6">widget · vidrio, sin marco duro<br>hover: dos glifos de texto</div>
+          </div>
+          <div style="display:flex; gap:16px">
+            <div style="flex:1; height:74px; background:#f0efee; position:relative">
+              <div style="position:absolute; top:0; left:0; width:68%; height:3px; background:oklch(0.55 0.05 90 / .45)"></div>
+              <div style="position:absolute; bottom:8px; left:10px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#a3a29f">68%</div>
+            </div>
+            <div style="flex:1; height:74px; background:#141516; position:relative">
+              <div style="position:absolute; top:0; left:0; width:94%; height:6px; background:oklch(0.74 0.1 90 / .85); box-shadow:0 0 12px oklch(0.74 0.1 90 / .5)"></div>
+              <div style="position:absolute; bottom:8px; left:10px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#747677">último 10% · engorda y brilla</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { s: 84 };
+  componentDidMount() { this.t = setInterval(() => this.setState(p => ({ s: p.s + 1 })), 1000); }
+  componentWillUnmount() { clearInterval(this.t); }
+  renderVals() {
+    const s = this.state.s;
+    const mm = String(Math.floor(s / 60)).padStart(2, "0");
+    const ss = String(s % 60).padStart(2, "0");
+    const dark = this.state.dark ?? true;
+    const T = {
+      a: dark ? ["#0e100f", "#eae7e0", "oklch(0.72 0.06 150)"] : ["#f2f1ec", "#141615", "oklch(0.58 0.06 150)"],
+      b: dark ? ["#0b0d12", "#e6e9ef", "oklch(0.68 0.07 250)"] : ["#eef0f4", "#0f1116", "oklch(0.56 0.07 250)"],
+      c: dark ? ["#121110", "#f4f1ea", "oklch(0.72 0.08 40)"] : ["#f5f2ec", "#171512", "oklch(0.6 0.08 40)"],
+      d: dark ? ["#0b0c0b", "#e9e4d8", "oklch(0.76 0.05 150)"] : ["#efece3", "#1a1c19", "oklch(0.5 0.05 150)"]
+    };
+    return {
+      crono: mm + ":" + ss,
+      dark,
+      temaLabel: dark ? "Tema oscuro" : "Tema claro",
+      toggleTema: () => this.setState(p => ({ dark: !(p.dark ?? true) })),
+      aBg: T.a[0], aFg: T.a[1], aAc: T.a[2],
+      bBg: T.b[0], bFg: T.b[1], bAc: T.b[2],
+      cBg: T.c[0], cFg: T.c[1], cAc: T.c[2],
+      dBg: T.d[0], dFg: T.d[1], dAc: T.d[2]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+dist-ssr/
+*.local
+.vite/
+src-tauri/target/
+src-tauri/gen/schemas/
+.env
+.env.*.local
+.claude/settings.local.json
+Thumbs.db
+graphify-out/
