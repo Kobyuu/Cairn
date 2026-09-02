@@ -10,34 +10,61 @@ lógica del temporizador.
 
 ## Fuente de verdad
 
-`docs/design_handoff_cairn_foco/` — dirección aprobada **"Aliento"**.
+`docs/design_handoff_cairn_foco/` — dirección **"Gráfica" (dial)**.
 
-| Archivo                     | Qué es                                                                   |
-| --------------------------- | ------------------------------------------------------------------------ |
-| `README.md`                 | especificación medida: tokens, tipografía, componentes, animaciones      |
-| `Cairn Foco.dc.html`        | **fuente de verdad visual** de Foco: hifi, ambos temas, animaciones      |
-| `Cairn Direcciones.dc.html` | exploración completa; el turno `#3a` es la aprobada, con Widget/Ambiente |
+| Archivo                       | Qué es                                                          |
+| ----------------------------- | --------------------------------------------------------------- |
+| `README.md`                   | especificación medida: geometría, tokens, tipografía, animaciones |
+| `Cairn Foco Grafico.dc.html`  | **fuente de verdad visual** de Foco: dial, arco y cronómetro reales |
+| `Cairn Foco.dc.html`          | dirección "Aliento" (halos que respiran) — alternativa, para comparar |
+| `Cairn Direcciones.dc.html`   | exploración completa: turno 3 es Aliento, turnos 2 y 1 descartados |
+| `support.js`                  | runtime para abrir los `.dc.html` en el navegador; **no es diseño** |
+
+> **Gráfica es la dirección elegida** (confirmado por Manu el 2026-09-02, tras la
+> reescritura del handoff que reemplazó a "Aliento"). `Cairn Foco.dc.html` queda
+> en el repo solo como registro de la opción descartada: **no se implementa**.
 
 Los `.dc.html` son **referencias de diseño, no código para copiar**. Se recrean en
 React + Tailwind con los patrones del proyecto.
 
-**Fidelidad declarada:** Foco es **hifi** — colores, tipografía, tamaños,
-espaciados, hover y animaciones son finales y se recrean fielmente. Widget y
-Ambiente son **lofi**: maquetas de intención, no pantallas terminadas.
+**Fidelidad:** Foco es **hifi**. Rutina expandida, Widget, Ambiente y Ajustes
+**no están diseñadas** — el handoff las lista como pendientes.
+
+## Composición de Foco
+
+Contenedor `100vw × 100vh`, `overflow:hidden`, todo centrado. El **dial de 620 px
+es el único elemento en el flujo**; el resto va en absoluto contra los bordes.
+
+**Fondo (tres capas):** grano de 3×3 px al 45%; grilla de encuadre de cuatro
+hairlines a 96 px de cada borde; y la cifra de contorno — el número de pausa del
+día en Newsreader 420 px, `color:transparent` con `-webkit-text-stroke`, anclada
+saliéndose del borde inferior a propósito.
+
+**Dial (620 px):** anillo de 60 marcas hecho con `repeating-conic-gradient` y
+recortado con `mask:radial-gradient` a 21 px de grosor; arco de progreso con
+`conic-gradient` recortado a 5 px; dos aros interiores, uno de ellos solo
+`border-top` en color de acento girando con `spin`.
+
+**Barra de controles** (`bottom:96px`): una sola caja segmentada, borde de 1 px,
+**sin radio y sin sombra** — `LISTO` | `POSPONER 5` | `▾` | `VER RUTINA`. El menú
+de `▾` abre **hacia arriba**, alineado al segmento, con el mismo borde y fondo.
 
 ## Lo que el handoff NO decide
 
 Se escribe acá para que nadie lo implemente al revés más adelante:
 
-- **El estado sigue siendo `deadline_ms`.** El §State Management del handoff
-  propone `cycleStartedAt` y define posponer como
-  `cycleStartedAt = now - (interval - n)`. Es un rodeo para reusar un campo. Gana
-  `architecture.md` §D2 y CLAUDE.md §2. Equivalencia para leer el handoff:
+- **El estado sigue siendo `deadline_ms`.** El §State Management del handoff usa
+  `cycleStartedAt` y define posponer como `cycleStartedAt = now - (interval - n)`.
+  Es un rodeo para reusar un campo. Gana `architecture.md` §D2 y CLAUDE.md §2, y
+  posponer es `deadline = now + n`. Equivalencia para leer el handoff:
   `deadline_ms == cycleStartedAt + interval`.
-- **Ambiente mide 3 px / 5 px**, no los 4 px del brief original. Acá **sí** gana
-  el handoff: es la decisión posterior, y es una decisión visual.
-- **Rutina expandida y Ajustes no están diseñadas.** Se construyen con el
-  vocabulario de Foco y se revisan cuando llegue su handoff.
+- **`pauseCountToday` es un campo nuevo.** La cifra de contorno y el margen
+  derecho lo necesitan, y hoy no existe en el estado ni en `store.json`. Es un
+  contador que se reinicia a medianoche: **derivarlo, no persistirlo**, contando
+  las confirmaciones del día. Persistirlo obliga a manejar el cambio de fecha con
+  la app abierta, que es un bug esperando.
+- **Ambiente sigue siendo 3–5 px.** El handoff lo confirma en "Pantallas
+  faltantes"; coincide con `architecture.md` §D6 y `SPEC-presence-modes`.
 
 ## Tokens
 
@@ -46,19 +73,20 @@ Se escribe acá para que nadie lo implemente al revés más adelante:
 [data-theme=light] { --bg:#efece3; --fg:#1a1c19; --ac:oklch(0.50 0.05 150); }
 ```
 
-Los grises intermedios **no son colores nuevos**: son
-`color-mix(in oklab, var(--fg) N%, transparent)` con N ∈ {8, 10, 12, 13, 20, 22,
-25, 30, 34, 38, 52, 66}. Se declaran como tokens de color de Tailwind, no como
-utilidades arbitrarias repetidas.
+Idénticos a la dirección anterior: el rediseño cambió la composición, no la paleta.
 
-**Trampa documentada por el handoff: no usar `currentColor` dentro de
-`color-mix`** — no resuelve contra un `color` seteado en línea y rompe el tema
-claro.
+Los grises **no son colores nuevos**: son
+`color-mix(in oklab, var(--fg) N%, transparent)` con N ∈ {8, 9, 10, 14, 18, 20,
+24, 26, 30, 34, 40, 46, 66} — trece valores. Se declaran como tokens de Tailwind,
+no como utilidades arbitrarias repetidas.
 
-Tipografía: **Newsreader** 300 (display y cifras, 196/52/19/14 px) e **IBM Plex
-Mono** 400 (etiquetas y controles, 12/10/9 px). Cifras siempre con
-`font-variant-numeric: tabular-nums`. Radios: `999px`, `50%`, `4px`, `0`.
-Sombras: ninguna — la profundidad sale de la viñeta y los halos.
+**Trampa documentada: no usar `currentColor` dentro de `color-mix`** — no resuelve
+contra un `color` seteado en línea y rompe el tema claro.
+
+Tipografía: **Newsreader** 300 (420 / 150 / 17 px) e **IBM Plex Mono** 400
+(12 / 11 / 10 / 9 px, `letter-spacing` .08–.4em). Cifras siempre con
+`font-variant-numeric: tabular-nums`. Radios: `50%` en el dial, **`0` en todo lo
+demás**. Sin sombras.
 
 ### Dependencia a agregar (avisar antes — CLAUDE.md §5)
 
@@ -69,62 +97,73 @@ escritorio no puede depender de conexión para renderizar su pantalla principal.
 
 ## Criterios de aceptación
 
-1. Foco reproduce el `.dc.html` de referencia: siete capas de fondo, cuatro
-   escuadras de encuadre, etiqueta de rutina, sobre-línea, cronómetro de 196 px,
-   marca de respiración, fila de botones y pista inferior.
-2. Los dos temas funcionan y se cambian desde Ajustes. El círculo del prototipo es
-   solo de prueba y **no** va al producto.
-3. Las cuatro animaciones corren con sus períodos y delays: `halo` 5,5 s con
-   delays 0 / 0,7 / 1,4 s; `wash` 11 s; `turn` 45 s lineal; `breathe` 5,5 s.
-4. **`prefers-reduced-motion` congela halos, wash, arco y punto de respiración en
-   su estado medio.** No es opcional.
-5. El grupo "posponer 5 ▾" funciona partido: el segmento izquierdo pospone el
-   valor rápido; `▾` abre el menú con 10 / 15 / 30 y un campo de minutos libres.
-6. Widget y Ambiente adoptan los tokens y el vocabulario, sin pretender ser
-   pantallas finales (son lofi en el handoff).
-7. La app renderiza correctamente **sin conexión a internet**.
-8. Cero hex hardcodeado en componentes: todo sale de los tokens.
+1. Foco reproduce `Cairn Foco Grafico.dc.html`: las tres capas de fondo, el dial
+   de 620 px con sus cuatro anillos, el bloque central y la barra segmentada.
+2. **El arco recorre 360° por minuto** — marca los segundos de la pausa, no el
+   ciclo de trabajo. Se actualiza una vez por segundo **sin transición**: el salto
+   de 6° coincide con el paso de las marcas, y suavizarlo rompe el efecto.
+3. Los dos temas funcionan y se cambian desde Ajustes. El cuadrado del prototipo
+   es solo de prueba y **no** va al producto.
+4. Las tres animaciones corren: `spin` 45 s lineal, `pulse` 5,5 s, `grow` 5,5 s
+   `alternate`.
+5. **`prefers-reduced-motion` congela `spin`, `pulse` y `grow` — pero el arco
+   sigue actualizándose**, porque es información, no decoración. Esa distinción es
+   el punto de la regla.
+6. La barra segmentada funciona; el menú de `▾` abre hacia arriba y acepta minutos
+   arbitrarios.
+7. Por debajo de ~1000 × 780 px el bloque central escala con `transform: scale()`
+   desde el centro, o el dial baja a 460 px con el cronómetro a 112 px.
+   **No reflowear**: la composición depende del dial centrado y la grilla a 96 px.
+8. La app renderiza correctamente **sin conexión a internet**.
+9. Cero hex hardcodeado en componentes: todo sale de los tokens.
 
 ## Tests (TDD)
 
-Etapa mayormente visual; el test automático se reserva para lo que sí tiene lógica
-y para lo que puede romperse en silencio.
+Etapa mayormente visual; el test automático se reserva para lo que tiene lógica y
+puede romperse en silencio.
 
-- `vitest` — el formateo `mm:ss` del cronómetro ascendente, incluido el paso de
-  `59:59` a `60:00` (el handoff especifica `mm:ss`, no `h:mm:ss`, así que hay que
-  decidir y testear qué pasa pasada la hora).
-- `vitest` — el resolvedor de tokens: pedir una mezcla con N fuera del conjunto de
-  12 valores permitidos falla en tiempo de test, no en producción. Es lo que
-  impide que se filtre un hex suelto.
+- `vitest` — el ángulo del arco: `angle(elapsedSec) === (elapsedSec % 60) / 60 * 360`.
+  Casos: 0 s → 0°; 30 s → 180°; 59 s → 354°; 60 s → 0° (vuelve a empezar);
+  3661 s → 6°. El wrap del minuto es donde se cuela el off-by-one.
+- `vitest` — el formateo `mm:ss` del cronómetro, incluido el paso de `59:59` a
+  `60:00` (el handoff fija `mm:ss`, así que hay que decidir y testear qué pasa
+  pasada la hora).
+- `vitest` — `pauseCountToday` se reinicia al cambiar de día con la app abierta.
+- `vitest` — el resolvedor de tokens: pedir una mezcla con N fuera de los trece
+  valores permitidos falla en tiempo de test, no en producción. Es lo que impide
+  que se filtre un hex suelto.
 - **Todo lo demás va a checklist visual.** Un snapshot de DOM no prueba que un
-  halo respire.
+  dial respire.
 
 ## Verificación manual
 
-- [ ] Comparar Foco lado a lado con `Cairn Foco.dc.html` abierto en el navegador,
+- [ ] Comparar Foco lado a lado con `Cairn Foco Grafico.dc.html` en el navegador,
       en ambos temas.
-- [ ] Activar "Reducir movimiento" en Windows → las animaciones se congelan.
+- [ ] Mirar el arco un minuto entero: avanza a saltos de 6 s por marca y vuelve a
+      cero al minuto.
+- [ ] Activar "Reducir movimiento" en Windows → el dial deja de respirar **pero el
+      arco sigue avanzando**.
 - [ ] Desconectar internet, reiniciar la app → las tipografías se ven igual.
-- [ ] Hover sobre `LISTO`, sobre cada segmento de "posponer 5 ▾" y sobre
-      "ver rutina": los tres estados coinciden con la referencia.
-- [ ] `▾` abre el menú; un valor arbitrario de minutos funciona.
-- [ ] Ambiente sobre un fondo claro y sobre uno oscuro: se lee en los dos.
+- [ ] Hover sobre los cuatro segmentos de la barra: coinciden con la referencia.
+- [ ] `▾` abre el menú hacia arriba; un valor arbitrario de minutos funciona.
+- [ ] Achicar la ventana a menos de 1000 px de ancho → escala, no reflowea.
 
 ## Límites
 
 - **Nunca:** tocar `timer.rs` en esta etapa. Si el diseño parece exigir un cambio
   de lógica, es señal de que se leyó mal el handoff — releer §"Lo que el handoff
   NO decide".
-- **Nunca:** copiar y pegar el `.dc.html`. Se recrea con los componentes del
-  proyecto.
+- **Nunca:** copiar y pegar el `.dc.html`, ni incluir `support.js`, que es runtime
+  del prototipo y no parte del diseño.
 - **Nunca:** hex hardcodeado, ni Google Fonts por CDN.
-- **Preguntar primero:** cualquier librería de animación. Las cuatro animaciones
-  son CSS puro en el handoff y así se quedan — sin Framer Motion, sin GSAP.
+- **Nunca:** transición en el arco. El salto discreto es la decisión, no un
+  descuido.
+- **Preguntar primero:** cualquier librería de animación. Las tres animaciones son
+  CSS puro en el handoff y así se quedan — sin Framer Motion, sin GSAP.
 
 ## Preguntas abiertas
 
-- **Cronómetro pasada la hora:** el handoff fija `mm:ss`. ¿A los 60 minutos de
-  pausa muestra `60:00` o pasa a `1:00:00`? Se decide al implementar y se anota;
-  no bloquea.
-- Rutina expandida, Widget final, Ambiente final y Ajustes esperan su propio
-  handoff. Hasta entonces se construyen con el vocabulario de Foco.
+1. **Cronómetro pasada la hora:** el handoff fija `mm:ss`. ¿A los 60 minutos
+   muestra `60:00` o pasa a `1:00:00`? Se decide al implementar y se anota.
+2. Rutina expandida, Widget, Ambiente y Ajustes esperan su propio handoff. Hasta
+   entonces se construyen con el vocabulario de Gráfica.

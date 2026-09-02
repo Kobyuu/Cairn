@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;1,6..72,300&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  html, body { margin:0; height:100%; background:#0b0c0b; }
+  body { -webkit-font-smoothing:antialiased; }
+  a { color:oklch(0.76 0.05 150); text-decoration:none; }
+  a:hover { color:oklch(0.86 0.05 150); }
+  @keyframes cairnSpin { 0% { transform:rotate(0deg) } 100% { transform:rotate(360deg) } }
+  @keyframes cairnPulse { 0%,100% { opacity:.35 } 50% { opacity:.9 } }
+  @keyframes cairnGrow { 0% { transform:scale(.985) } 100% { transform:scale(1.015) } }
+</style>
+</helmet>
+
+<div style="width:100vw; height:100vh; background:{{ bg }}; color:{{ fg }}; position:relative; overflow:hidden; font-family:'IBM Plex Mono',monospace; display:flex; align-items:center; justify-content:center">
+
+  <div style="position:absolute; inset:0; background-image:radial-gradient(circle, color-mix(in oklab, {{ fg }} 10%, transparent) .6px, transparent .6px); background-size:3px 3px; opacity:.45; pointer-events:none"></div>
+  <div style="position:absolute; left:96px; top:0; bottom:0; width:1px; background:color-mix(in oklab, {{ fg }} 10%, transparent)"></div>
+  <div style="position:absolute; right:96px; top:0; bottom:0; width:1px; background:color-mix(in oklab, {{ fg }} 10%, transparent)"></div>
+  <div style="position:absolute; top:96px; left:0; right:0; height:1px; background:color-mix(in oklab, {{ fg }} 10%, transparent)"></div>
+  <div style="position:absolute; bottom:96px; left:0; right:0; height:1px; background:color-mix(in oklab, {{ fg }} 10%, transparent)"></div>
+
+  <div style="position:absolute; right:60px; bottom:-90px; font-family:'Newsreader',Georgia,serif; font-size:420px; font-weight:300; line-height:.8; color:transparent; -webkit-text-stroke:1px color-mix(in oklab, {{ fg }} 14%, transparent); pointer-events:none; user-select:none">06</div>
+
+  <div style="position:absolute; left:52px; top:50%; transform:translateY(-50%) rotate(180deg); writing-mode:vertical-rl; font-size:11px; letter-spacing:.4em; color:color-mix(in oklab, {{ fg }} 40%, transparent)">CORRECCIÓN DE POSTURA</div>
+  <div style="position:absolute; right:52px; top:50%; transform:translateY(-50%); writing-mode:vertical-rl; font-size:11px; letter-spacing:.4em; color:color-mix(in oklab, {{ fg }} 26%, transparent)">CICLO 45 MIN · PAUSA 6</div>
+
+  <div style="position:absolute; top:56px; left:0; right:0; display:flex; justify-content:center; gap:14px; align-items:center; font-size:10px; letter-spacing:.34em; color:color-mix(in oklab, {{ fg }} 34%, transparent)">
+    <div style="width:6px; height:6px; background:{{ ac }}; animation:cairnPulse 5.5s ease-in-out infinite"></div>
+    <div>INTERVALO CUMPLIDO</div>
+  </div>
+
+  <div onClick="{{ toggleTema }}" title="Cambiar tema" style="position:absolute; top:52px; right:52px; width:14px; height:14px; border:1px solid color-mix(in oklab, {{ fg }} 30%, transparent); cursor:pointer" style-hover="background:color-mix(in oklab, {{ fg }} 30%, transparent)"></div>
+
+  <div style="position:relative; width:620px; height:620px; display:flex; align-items:center; justify-content:center">
+    <div style="position:absolute; inset:0; border-radius:50%; background:{{ tickRing }}; -webkit-mask:radial-gradient(circle, transparent 0 289px, #000 289px); mask:radial-gradient(circle, transparent 0 289px, #000 289px)"></div>
+    <div style="position:absolute; inset:26px; border-radius:50%; background:{{ arcRing }}; -webkit-mask:radial-gradient(circle, transparent 0 279px, #000 279px); mask:radial-gradient(circle, transparent 0 279px, #000 279px); animation:cairnGrow 5.5s ease-in-out infinite alternate"></div>
+    <div style="position:absolute; inset:52px; border-radius:50%; border:1px solid color-mix(in oklab, {{ fg }} 9%, transparent)"></div>
+    <div style="position:absolute; inset:52px; border-radius:50%; border-top:1px solid color-mix(in oklab, {{ ac }} 45%, transparent); animation:cairnSpin 45s linear infinite"></div>
+
+    <div style="position:relative; display:flex; flex-direction:column; align-items:center">
+      <div style="font-size:10px; letter-spacing:.34em; color:color-mix(in oklab, {{ fg }} 34%, transparent)">EN PAUSA</div>
+      <div style="font-family:'Newsreader',Georgia,serif; font-size:150px; font-weight:300; line-height:1; letter-spacing:-.03em; font-variant-numeric:tabular-nums; margin-top:10px">{{ crono }}</div>
+      <div style="width:64px; height:1px; background:color-mix(in oklab, {{ fg }} 20%, transparent); margin-top:22px"></div>
+      <div style="font-family:'Newsreader',Georgia,serif; font-style:italic; font-size:17px; color:color-mix(in oklab, {{ fg }} 46%, transparent); margin-top:20px">tomate el tiempo que necesites</div>
+    </div>
+  </div>
+
+  <div style="position:absolute; bottom:96px; left:0; right:0; display:flex; justify-content:center">
+    <div style="display:flex; align-items:stretch; border:1px solid color-mix(in oklab, {{ fg }} 18%, transparent); font-size:12px; background:color-mix(in oklab, {{ bg }} 70%, transparent)">
+      <div style="padding:15px 40px; background:{{ ac }}; color:{{ bg }}; letter-spacing:.16em; cursor:pointer" style-hover="filter:brightness(1.1)">LISTO</div>
+      <div style="padding:15px 22px; border-left:1px solid color-mix(in oklab, {{ fg }} 18%, transparent); color:color-mix(in oklab, {{ fg }} 66%, transparent); letter-spacing:.08em; cursor:pointer" style-hover="background:color-mix(in oklab, {{ fg }} 8%, transparent)">POSPONER 5</div>
+      <div style="padding:15px 14px; border-left:1px solid color-mix(in oklab, {{ fg }} 18%, transparent); color:color-mix(in oklab, {{ fg }} 40%, transparent); font-size:9px; cursor:pointer" style-hover="background:color-mix(in oklab, {{ fg }} 8%, transparent)">▾</div>
+      <div style="padding:15px 22px; border-left:1px solid color-mix(in oklab, {{ fg }} 18%, transparent); color:color-mix(in oklab, {{ fg }} 66%, transparent); letter-spacing:.08em; cursor:pointer" style-hover="background:color-mix(in oklab, {{ fg }} 8%, transparent)">VER RUTINA</div>
+    </div>
+  </div>
+
+  <div style="position:absolute; bottom:52px; left:0; right:0; text-align:center; font-size:10px; letter-spacing:.24em; color:color-mix(in oklab, {{ fg }} 24%, transparent)">MANTENÉ POSPONER PARA ELEGIR LOS MINUTOS</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;tema&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;oscuro&quot;,&quot;claro&quot;],&quot;default&quot;:&quot;oscuro&quot;,&quot;tsType&quot;:&quot;'oscuro' | 'claro'&quot;}}">
+class Component extends DCLogic {
+  state = { s: 84, dark: null };
+  componentDidMount() { this.t = setInterval(() => this.setState(p => ({ s: p.s + 1 })), 1000); }
+  componentWillUnmount() { clearInterval(this.t); }
+  renderVals() {
+    const dark = this.state.dark ?? (this.props.tema !== "claro");
+    const s = this.state.s;
+    const mm = String(Math.floor(s / 60)).padStart(2, "0");
+    const ss = String(s % 60).padStart(2, "0");
+    const fg = dark ? "#e9e4d8" : "#1a1c19";
+    const ac = dark ? "oklch(0.76 0.05 150)" : "oklch(0.5 0.05 150)";
+    const tick = `color-mix(in oklab, ${fg} 26%, transparent)`;
+    const deg = ((s % 60) / 60) * 360;
+    return {
+      crono: mm + ":" + ss,
+      bg: dark ? "#0b0c0b" : "#efece3",
+      fg, ac,
+      tickRing: `repeating-conic-gradient(from -0.25deg, ${tick} 0 0.5deg, transparent 0.5deg 6deg)`,
+      arcRing: `conic-gradient(${ac} 0 ${deg}deg, color-mix(in oklab, ${fg} 8%, transparent) ${deg}deg 360deg)`,
+      toggleTema: () => this.setState(p => ({ dark: !(p.dark ?? (this.props.tema !== "claro")) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

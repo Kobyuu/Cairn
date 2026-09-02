@@ -9,20 +9,31 @@ y produce un `.exe` que se puede doble-clickear. Nada más. El objetivo real es
 **probar la cadena de herramientas completa antes de escribir lógica**: si el
 toolchain de Rust falla, que falle en la primera línea y no en la número mil.
 
-## Prerrequisito bloqueante (lo instala Manu, el agente no puede)
+## Prerrequisitos — RESUELTOS el 2026-09-02
 
-Verificado el 2026-09-02: en esta máquina **falta todo el toolchain de Rust**.
+| Requisito            | Estado                                                             |
+| -------------------- | ------------------------------------------------------------------ |
+| WebView2 Runtime     | ✅ 151.0.4129.107                                                  |
+| Rust                 | ✅ 1.98.0, toolchain `stable-x86_64-pc-windows-msvc`, con clippy y rustfmt |
+| MSVC C++ Build Tools | ✅ 17.14, en `D:\VS\BuildTools` — MSVC 14.44.35207 + Windows 11 SDK |
 
-| Requisito            | Estado                     | Cómo se instala                                                           |
-| -------------------- | -------------------------- | ------------------------------------------------------------------------- |
-| WebView2 Runtime     | ✅ 151.0.4129.107          | ya está                                                                   |
-| Rust (`rustup`)      | ❌ no existe `~/.cargo`    | https://rustup.rs → toolchain `stable-x86_64-pc-windows-msvc`             |
-| MSVC C++ Build Tools | ❌ no está el VS Installer | Visual Studio Build Tools → carga "Desarrollo para el escritorio con C++" |
+Verificado de punta a punta: `cargo new` + `cargo build` produjeron un `.exe` que
+corre. No alcanza con que exista `link.exe`; la prueba es que linkee.
 
-Sin esos dos, `pnpm tauri dev` no compila. Tauri linkea con el linker de MSVC,
-así que el target `-gnu` **no** es un atajo válido.
+**Dos cosas que quedaron aprendidas y conviene no repetir:**
 
-Verificación: `rustc -V` y `cargo -V` responden en una terminal nueva.
+- **Build Tools está instalado en `D:`, no en `C:`.** `C:` tenía 6 GB libres y una
+  instalación con `--includeRecommended` pide entre 5 y 7. El comando que
+  funcionó fue el bootstrapper oficial (`aka.ms/vs/17/release/vs_BuildTools.exe`)
+  con `--installPath D:\VS\BuildTools` y **solo dos componentes**:
+  `Microsoft.VisualStudio.Component.VC.Tools.x86.x64` y
+  `Microsoft.VisualStudio.Component.Windows11SDK.26100`. Total: 1,67 GB.
+- **winget quedó creyendo que Build Tools sigue instalado** de un intento previo
+  que se canceló. Si hace falta reinstalar, ir directo al bootstrapper — winget
+  responde "No available upgrade found" y no hace nada.
+
+Tauri linkea con el linker de MSVC, así que el target `-gnu` **no** es un atajo
+válido si algo de esto se rompe.
 
 ## Alcance
 
