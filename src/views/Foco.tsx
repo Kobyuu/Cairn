@@ -1,6 +1,10 @@
-import { useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { useEffect, useRef, useState } from "react";
+import { countCheckboxes, editedLabel, routineTitle } from "../routine";
+import type { MonitorInfo } from "../settings";
 import type { Phase } from "../timer";
 import { elapsedMs, formatDuration, parseMinutes, remainingMs } from "../timer";
+import { useAlertTone } from "../useAlertTone";
 import { useRoutine } from "../useRoutine";
 import { useSettings } from "../useSettings";
 import { useTimer } from "../useTimer";
@@ -17,6 +21,27 @@ import Routine from "./Routine";
 const CHIP_INTERVALS = [25, 45, 60, 90];
 const CHIP_SNOOZES = [2, 5, 10, 15];
 const HAIRLINE = "1px solid var(--fg-25)";
+
+/** Los saltos del menu del `▾`. Los chicos ya estan en el boton directo. */
+const MENU_SNOOZES = [10, 15, 30, 60];
+
+/** Las tres opciones de tema del handoff. El id es lo que se guarda. */
+const THEME_OPTIONS = [
+  { id: "system", label: "SISTEMA" },
+  { id: "light", label: "CLARO" },
+  { id: "dark", label: "OSCURO" },
+] as const;
+
+/** Las tres tarjetas de MODOS, en el orden del handoff: de menos a mas presente. */
+const MODE_OPTIONS = [
+  {
+    id: "ambient",
+    label: "AMBIENTE",
+    hint: "Una barra en el borde superior. Nada más.",
+  },
+  { id: "widget", label: "WIDGET", hint: "Ventana chica siempre encima." },
+  { id: "foco", label: "FOCO", hint: "La pantalla entera, todo el tiempo." },
+] as const;
 
 // La sobre-linea de Foco, indexada por fase. Como el tipo es `Record` sobre
 // `Phase["kind"]`, agregar una fase al core sin darle su texto no compila: es la
@@ -188,7 +213,18 @@ function Overline({ children }: Readonly<{ children: string }>) {
   );
 }
 
-/** Pastilla de accion. `solid` es la unica accion primaria de la pantalla. */
+/**
+ * Pastilla de accion. `solid` es la unica accion primaria de la pantalla.
+ *
+ * `alternate` es la otra etiqueta que este mismo boton puede llegar a mostrar
+ * ("ocultar rutina" para el que dice "ver rutina"). Se renderiza invisible
+ * debajo de la real para que el ancho de la pastilla sea siempre el de la
+ * etiqueta mas larga. No es un detalle: la fila esta centrada, asi que un
+ * boton que se ensancha corre a todos los demas, y `LISTO` es la unica accion
+ * de la pantalla que **no puede moverse nunca** (docs/DESIGN.md §4). Medir asi
+ * -y no con un `minWidth` en pixeles- es lo unico que no se rompe cuando
+ * cambia la tipografia o el `letter-spacing`.
+ */
 function Pill({
   children,
   onClick,
@@ -196,6 +232,7 @@ function Pill({
   active = false,
   disabled = false,
   padding = "12px 20px",
+  alternate,
 }: Readonly<{
   children: React.ReactNode;
   onClick: () => void;
@@ -203,6 +240,7 @@ function Pill({
   active?: boolean;
   disabled?: boolean;
   padding?: string;
+  alternate?: string;
 }>) {
   // `active` marca el panel abierto: la pastilla se tiñe de acento sin llegar a
   // ser sólida, que es lo que distingue "esto está abierto" de "esta es LA
@@ -222,17 +260,35 @@ function Pill({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="cairn-press rounded-full font-mono disabled:opacity-40"
+      // El fondo sale de la clase y NO de `style`: en linea le ganaria a la
+      // regla de hover por especificidad y la pastilla nunca se tiñe.
+      className={`cairn-press rounded-full font-mono disabled:opacity-40 ${
+        solid ? "cairn-solid" : "cairn-ghost"
+      }`}
       style={{
         padding,
         fontSize: 12,
         letterSpacing: solid ? ".14em" : ".06em",
-        background: solid ? "var(--color-ac)" : "transparent",
         color: ink,
         border: `1px solid ${edge}`,
       }}
     >
-      {children}
+      {alternate === undefined ? (
+        children
+      ) : (
+        <span className="grid">
+          <span
+            aria-hidden
+            className="invisible whitespace-nowrap"
+            style={{ gridArea: "1 / 1" }}
+          >
+            {alternate}
+          </span>
+          <span className="whitespace-nowrap" style={{ gridArea: "1 / 1" }}>
+            {children}
+          </span>
+        </span>
+      )}
     </button>
   );
 }
@@ -251,14 +307,320 @@ function Chip({
     <button
       type="button"
       onClick={onClick}
-      className="cairn-press font-mono"
+      aria-pressed={active}
+      className={`cairn-press font-mono ${
+        active ? "cairn-solid" : "cairn-ghost cairn-edge"
+      }`}
       style={{
         padding: "9px 15px",
         fontSize: 11,
         letterSpacing: ".1em",
-        background: active ? "var(--color-ac)" : "transparent",
         color: active ? "var(--color-bg)" : "var(--fg-66)",
-        border: `1px solid ${active ? "var(--color-ac)" : "var(--fg-18)"}`,
+        // Longhands y no el shorthand `border`: el color lo pone `.cairn-edge`
+        // cuando el chip esta apagado, para que su hover exista.
+        borderWidth: 1,
+        borderStyle: "solid",
+        borderColor: active ? "var(--color-ac)" : undefined,
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+/**
+ * La pastilla partida `posponer N` + `▾` del handoff, con su menu.
+ *
+ * El menu abre **hacia arriba** porque la fila de botones esta a 88 px del
+ * borde inferior: hacia abajo no entra.
+ *
+ * El `ref` envuelve la pastilla Y el menu a proposito. Si envolviera solo al
+ * menu, el `pointerdown` sobre el `▾` caeria "afuera" y lo cerraria, y el
+ * `onClick` que llega despues lo volveria a abrir: el boton dejaria de poder
+ * cerrarlo.
+ */
+function SnoozePill({
+  minutes,
+  onSnooze,
+}: Readonly<{ minutes: number; onSnooze: (minutes?: number) => void }>) {
+  const [open, setOpen] = useState(false);
+  const [custom, setCustom] = useState("");
+  const box = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const away = (event: PointerEvent) => {
+      if (!box.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", away);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", away);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [open]);
+
+  const pick = (value: number) => {
+    setOpen(false);
+    setCustom("");
+    onSnooze(value);
+  };
+
+  const submitCustom = () => {
+    const parsed = parseMinutes(custom);
+    if (parsed !== null) pick(parsed);
+  };
+
+  return (
+    <div className="relative" ref={box}>
+      {open && (
+        <div
+          className="absolute font-mono"
+          style={{
+            bottom: "calc(100% + 10px)",
+            right: 0,
+            minWidth: 176,
+            background: "var(--color-bg)",
+            border: "1px solid var(--fg-20)",
+          }}
+        >
+          {MENU_SNOOZES.map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => pick(value)}
+              className="cairn-press cairn-ghost block w-full text-left"
+              style={{
+                padding: "10px 16px",
+                fontSize: 11,
+                letterSpacing: ".06em",
+                color: "var(--fg-66)",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              posponer {value}
+            </button>
+          ))}
+          <div style={{ height: 1, background: "var(--fg-10)" }} />
+          <div
+            className="flex items-center gap-2"
+            style={{ padding: "10px 16px" }}
+          >
+            <input
+              type="number"
+              min={1}
+              value={custom}
+              placeholder="—"
+              onChange={(event) => setCustom(event.target.value)}
+              // Enter y NADA MAS. Con un `onBlur` que confirmara, tipear 3 y
+              // despues clickear "posponer 15" pospondria 3: el mousedown
+              // saca el foco del campo, el menu se desmonta, y el click sobre
+              // la fila nunca llega. Posponer mueve `deadline_ms` -es la unica
+              // accion del menu que toca el ciclo-, asi que un disparo por
+              // accidente no es cosmetico. Salir sin Enter es cancelar.
+              onKeyDown={(event) => {
+                if (event.key === "Enter") submitCustom();
+              }}
+              className="font-mono"
+              style={{
+                width: 56,
+                padding: "7px 8px",
+                fontSize: 11,
+                background: "transparent",
+                color: "var(--color-fg)",
+                border: "1px solid var(--fg-18)",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            />
+            <span
+              style={{
+                fontSize: 10,
+                letterSpacing: ".2em",
+                color: "var(--fg-38)",
+              }}
+            >
+              MIN
+            </span>
+          </div>
+        </div>
+      )}
+      {/* `overflow-hidden` recorta los dos segmentos contra el radio de la
+          pastilla; por eso el menu vive AFUERA de esta caja y no adentro. */}
+      <div
+        className="flex items-stretch overflow-hidden rounded-full font-mono"
+        style={{ border: "1px solid var(--fg-20)", fontSize: 12 }}
+      >
+        <button
+          type="button"
+          onClick={() => onSnooze()}
+          className="cairn-press cairn-ghost"
+          style={{
+            padding: "12px 18px",
+            letterSpacing: ".06em",
+            color: "var(--fg-66)",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {/* Reserva dos digitos siempre. La fila esta centrada, asi que si
+              esta pastilla se ensancha al pasar el posponer rapido de 5 a 15,
+              `LISTO` se corre -y `LISTO` no se mueve nunca (DESIGN.md §4)-. */}
+          <span className="grid">
+            <span
+              aria-hidden
+              className="invisible whitespace-nowrap"
+              style={{ gridArea: "1 / 1" }}
+            >
+              posponer 00
+            </span>
+            <span className="whitespace-nowrap" style={{ gridArea: "1 / 1" }}>
+              posponer {minutes}
+            </span>
+          </span>
+        </button>
+        <div style={{ width: 1, background: "var(--fg-20)" }} />
+        <button
+          type="button"
+          aria-label="Elegir los minutos a posponer"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={() => setOpen((current) => !current)}
+          className="cairn-press cairn-ghost"
+          style={{
+            padding: "12px 13px",
+            fontSize: 9,
+            color: open ? "var(--color-ac)" : "var(--fg-66)",
+          }}
+        >
+          ▾
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * El diagrama de 64 × 40 px de cada tarjeta de modo: una ventana en miniatura
+ * con la marca del modo donde le toca aparecer.
+ *
+ * Es la unica forma honesta de explicar tres modos sin tres capturas: la barra
+ * arriba, la cajita abajo a la derecha, el circulo en el centro.
+ */
+function ModeDiagram({ mode }: Readonly<{ mode: string }>) {
+  return (
+    <div
+      className="relative flex items-center justify-center"
+      style={{ width: 64, height: 40, border: "1px solid var(--fg-18)" }}
+    >
+      {mode === "ambient" && (
+        <div
+          className="absolute top-0 left-0"
+          style={{ width: "62%", height: 3, background: "var(--color-ac)" }}
+        />
+      )}
+      {mode === "widget" && (
+        <div
+          className="absolute"
+          style={{
+            right: 6,
+            bottom: 6,
+            width: 30,
+            height: 14,
+            borderRadius: 2,
+            background: "var(--fg-30)",
+            border: "1px solid var(--fg-40)",
+          }}
+        />
+      )}
+      {mode === "foco" && (
+        <div
+          className="rounded-full"
+          style={{ width: 22, height: 22, border: "1px solid var(--color-ac)" }}
+        />
+      )}
+    </div>
+  );
+}
+
+/** Una de las tres tarjetas de MODOS: diagrama, titulo y una linea. */
+function ModeCard({
+  mode,
+  label,
+  hint,
+  active,
+  onClick,
+}: Readonly<{
+  mode: string;
+  label: string;
+  hint: string;
+  active: boolean;
+  onClick: () => void;
+}>) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`cairn-press flex flex-1 flex-col gap-4 text-left ${
+        active ? "" : "cairn-ghost cairn-edge"
+      }`}
+      style={{
+        padding: 20,
+        borderWidth: 1,
+        borderStyle: "solid",
+        borderColor: active ? "var(--color-ac)" : undefined,
+        background: active ? "var(--ac-12)" : undefined,
+      }}
+    >
+      <div className="flex items-center justify-center" style={{ height: 52 }}>
+        <ModeDiagram mode={mode} />
+      </div>
+      <div>
+        <div
+          className="font-mono"
+          style={{
+            fontSize: 12,
+            letterSpacing: ".14em",
+            color: active ? "var(--color-ac)" : "var(--fg-66)",
+          }}
+        >
+          {label}
+        </div>
+        <div
+          className="font-mono"
+          style={{
+            fontSize: 10,
+            lineHeight: 1.7,
+            color: "var(--fg-38)",
+            marginTop: 5,
+          }}
+        >
+          {hint}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+/** Boton de texto sin radio, para las dos acciones de la fila RUTINA. */
+function Action({
+  label,
+  onClick,
+  dim = false,
+}: Readonly<{ label: string; onClick: () => void; dim?: boolean }>) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="cairn-press cairn-ghost font-mono"
+      style={{
+        padding: "10px 16px",
+        fontSize: 11,
+        letterSpacing: ".1em",
+        color: dim ? "var(--fg-46)" : "var(--fg-66)",
+        border: "1px solid var(--fg-20)",
       }}
     >
       {label}
@@ -288,9 +650,7 @@ function Switch({
         width: 52,
         height: 26,
         border: `1px solid ${on ? "var(--color-ac)" : "var(--fg-22)"}`,
-        background: on
-          ? "color-mix(in oklab, var(--color-ac) 22%, transparent)"
-          : "transparent",
+        background: on ? "var(--ac-22)" : "transparent",
       }}
     >
       <span
@@ -324,7 +684,14 @@ function Row({
         <div style={{ fontSize: 23, fontWeight: 300 }}>{title}</div>
         <div
           className="font-mono"
-          style={{ fontSize: 11, color: "var(--fg-42)", marginTop: 6 }}
+          style={{
+            fontSize: 11,
+            color: "var(--fg-42)",
+            marginTop: 6,
+            // La descripcion lleva numeros -"6 PASOS", "EDITADO HACE 3 DIAS"-
+            // y todo numero va tabular (CLAUDE.md §5).
+            fontVariantNumeric: "tabular-nums",
+          }}
         >
           {hint}
         </div>
@@ -356,6 +723,153 @@ function Section({
   );
 }
 
+/**
+ * La fila "Pantalla" de MODOS: en que monitor aparecen Foco y Ambiente.
+ *
+ * Pide la lista por su cuenta en vez de recibirla por props para no volver a
+ * meterle estado y condiciones a `Foco`, que ya es la funcion mas larga del
+ * archivo.
+ *
+ * **Con una sola pantalla no se dibuja nada.** Un selector de una opcion no es
+ * una eleccion: es ruido que ocupa una fila y hace dudar de si falta algo.
+ *
+ * ponytail: la lista se pide una vez al montar. Enchufar un monitor con la app
+ * abierta no agrega el chip hasta reiniciarla -la geometria si se acomoda sola,
+ * porque el chequeo de 1 Hz de Rust la sigue-. Si llega a molestar, el camino
+ * es refrescarla al abrir el panel, no un sondeo.
+ */
+function MonitorRow({
+  selected,
+  onPick,
+}: Readonly<{ selected: string | null; onPick: (name: string) => void }>) {
+  const [monitors, setMonitors] = useState<MonitorInfo[]>([]);
+
+  useEffect(() => {
+    invoke<MonitorInfo[]>("modes_monitors").then(setMonitors).catch(console.error);
+  }, []);
+
+  if (monitors.length < 2) return null;
+
+  // Sin eleccion guardada manda el primario, que es lo mismo que hace Rust.
+  const active =
+    monitors.find((monitor) => monitor.name === selected) ??
+    monitors.find((monitor) => monitor.primary);
+
+  return (
+    <Row
+      title="Pantalla"
+      hint={`DÓNDE APARECEN FOCO Y AMBIENTE${
+        active === undefined ? "" : ` · ${active.width}×${active.height}`
+      }`}
+    >
+      {monitors.map((monitor, index) => (
+        <Chip
+          key={monitor.name}
+          // El ordinal y no el nombre: `\\.\DISPLAY1` no le dice nada a nadie,
+          // y el numero es el mismo que muestra Windows en su panel de
+          // pantallas, asi que el usuario ya sabe cual es cual.
+          label={String(index + 1)}
+          active={monitor.name === active?.name}
+          onClick={() => onPick(monitor.name)}
+        />
+      ))}
+    </Row>
+  );
+}
+
+/**
+ * El bloque del cronometro: sobre-linea, cifra y marca de respiracion.
+ *
+ * Es una unidad en `docs/DESIGN.md` §4 -"el bloque del cronometro va centrado
+ * con el panel cerrado"- y aca es un componente por el mismo motivo: los
+ * cuatro estados que lo mueven al abrirse un panel son suyos y de nadie mas.
+ *
+ * Con el panel CERRADO va centrado en la ventana, que es donde esta el halo: si
+ * el cronometro se queda arriba y el halo en el medio, la pantalla se parte en
+ * dos mitades que no se hablan. Los 130 px son la mitad del alto del bloque
+ * (sobre-linea + cronometro de 196 px + INHALAR), asi que
+ * `calc(50vh - 130px)` lo deja con su centro optico en el centro de la ventana.
+ * Al abrirse un panel sube a 58 px, apenas debajo de la sobre-linea.
+ *
+ * La fila de botones NO cuelga de aca (docs/DESIGN.md §4): esta anclada al pie,
+ * porque encoger el cronometro la moveria y `LISTO` no se mueve nunca.
+ *
+ * `pointer-events-none`: el bloque no tiene nada interactivo, y abierto su alto
+ * -que incluye los huecos reservados de la sobre-linea y de INHALAR, invisibles
+ * pero presentes- pasa los 172 px donde empieza el panel. Sin esto se comeria
+ * los clicks de EDITAR.
+ */
+function ClockBlock({
+  clock,
+  overline,
+  panelOpen,
+  breathing,
+}: Readonly<{
+  clock: string;
+  overline: string;
+  panelOpen: boolean;
+  /** La marca de respiracion solo tiene sentido durante la pausa. */
+  breathing: boolean;
+}>) {
+  return (
+    <div
+      className="cairn-shift pointer-events-none absolute top-0 right-0 left-0 flex flex-col items-center"
+      style={{
+        paddingTop: panelOpen ? 58 : "calc(50vh - 130px)",
+        transitionProperty: "padding-top",
+      }}
+    >
+      <div
+        className="cairn-fade"
+        style={{
+          fontStyle: "italic",
+          fontSize: 19,
+          color: "var(--fg-52)",
+          opacity: panelOpen ? 0 : 1,
+          transitionProperty: "opacity",
+        }}
+      >
+        {overline}
+      </div>
+      <div
+        className="cairn-shift"
+        style={{
+          fontSize: panelOpen ? 60 : 196,
+          fontWeight: 300,
+          lineHeight: 0.92,
+          letterSpacing: "-.025em",
+          fontVariantNumeric: "tabular-nums",
+          // 24 y no los 6 del handoff: con `line-height: .92` la caja del
+          // cronometro queda mas corta que sus propios glifos, asi que a
+          // 196 px las cifras se suben y le pisan la sobre-linea italica.
+          marginTop: 24,
+          transitionProperty: "font-size",
+        }}
+      >
+        {clock}
+      </div>
+      {/* El hueco de la marca se reserva siempre, este visible o no. */}
+      <div
+        className="cairn-fade flex items-center gap-3.5 font-mono"
+        style={{
+          marginTop: 20,
+          fontSize: 10,
+          letterSpacing: ".3em",
+          color: "var(--fg-34)",
+          opacity: breathing && !panelOpen ? 1 : 0,
+          transitionProperty: "opacity",
+        }}
+      >
+        <div
+          className="cairn-breathe rounded-full"
+          style={{ width: 5, height: 5, background: "var(--color-ac)" }}
+        />
+        <div>INHALAR · EXHALAR</div>
+      </div>
+    </div>
+  );
+}
+
 export default function Foco() {
   const {
     snapshot,
@@ -367,11 +881,22 @@ export default function Foco() {
     setIntervalMinutes,
     setQuickSnoozeMinutes,
   } = useTimer();
-  const { settings, setAutostart } = useSettings();
+  const {
+    settings,
+    setAutostart,
+    setTheme,
+    setSound,
+    setDefaultMode,
+    setMonitor,
+  } = useSettings();
   const routine = useRoutine();
   const [showSettings, setShowSettings] = useState(false);
   const [showRoutine, setShowRoutine] = useState(false);
   const [customMinutes, setCustomMinutes] = useState("");
+
+  // El tono del aviso. Toda la logica -y su estado- viven en el hook: aca solo
+  // se le pasan las dos cosas de las que depende.
+  useAlertTone(snapshot?.phase.kind, settings?.soundOnAlert ?? false);
 
   // Los dos paneles comparten la misma region y el mismo estado "abierto": el
   // encabezado se encoge una sola vez, no una por panel.
@@ -421,6 +946,13 @@ export default function Foco() {
 
   const overline = OVERLINE[phase.kind];
 
+  // La etiqueta de arriba es el NOMBRE DEL DOCUMENTO de rutina, como la dibuja
+  // el handoff ("CORRECCIÓN DE POSTURA"): la pantalla dice para que es la
+  // pausa, no cuanto dura el ciclo. Si el documento no tiene titulo -o todavia
+  // no se leyo- cae al intervalo, que es el otro dato que identifica al ciclo.
+  const title = routine.source === null ? null : routineTitle(routine.source);
+  const label = title?.toUpperCase() ?? `CICLO DE ${intervalMin} MIN`;
+
   return (
     <main
       // Sin drag region: a partir de la etapa 4, Foco ocupa el monitor entero
@@ -431,81 +963,14 @@ export default function Foco() {
       className="relative h-full w-full overflow-hidden font-sans"
     >
       <Backdrop lifted={panelOpen} />
-      <Overline>
-        {showSettings ? "AJUSTES" : `CICLO DE ${intervalMin} MIN`}
-      </Overline>
+      <Overline>{showSettings ? "AJUSTES" : label}</Overline>
 
-      {/* El encabezado. Con un panel abierto sube y el cronometro se encoge de
-          196 a 60 px; la fila de botones NO se mueve (docs/DESIGN.md §4), y por
-          eso esta anclada al pie y no colgando de este bloque. */}
-      {/* Con el panel CERRADO el bloque va centrado en la ventana, que es donde
-          esta el halo: si el cronometro se queda arriba y el halo en el medio,
-          la pantalla se parte en dos mitades que no se hablan. Los 121 px son
-          la mitad del alto del bloque (sobre-linea + cronometro de 196 px +
-          INHALAR), asi que `calc(50vh - 130px)` lo deja con su centro optico en
-          el centro de la ventana. Al abrirse un panel sube a 76 px, apenas
-          debajo de la sobre-linea, y le deja la pantalla al contenido.
-
-          `pointer-events-none`: el bloque no tiene nada interactivo, y abierto
-          su alto -que incluye los huecos reservados de la sobre-linea y de
-          INHALAR, invisibles pero presentes- pasa los 172 px donde empieza el
-          panel. Sin esto se comeria los clicks de EDITAR. */}
-      <div
-        className="cairn-shift pointer-events-none absolute top-0 right-0 left-0 flex flex-col items-center"
-        style={{
-          paddingTop: panelOpen ? 58 : "calc(50vh - 130px)",
-          transitionProperty: "padding-top",
-        }}
-      >
-        <div
-          className="cairn-fade"
-          style={{
-            fontStyle: "italic",
-            fontSize: 19,
-            color: "var(--fg-52)",
-            opacity: panelOpen ? 0 : 1,
-            transitionProperty: "opacity",
-          }}
-        >
-          {overline}
-        </div>
-        <div
-          className="cairn-shift"
-          style={{
-            fontSize: panelOpen ? 60 : 196,
-            fontWeight: 300,
-            lineHeight: 0.92,
-            letterSpacing: "-.025em",
-            fontVariantNumeric: "tabular-nums",
-            // 24 y no los 6 del handoff: con `line-height: .92` la caja del
-            // cronometro queda mas corta que sus propios glifos, asi que a
-            // 196 px las cifras se suben y le pisan la sobre-linea italica.
-            marginTop: 24,
-            transitionProperty: "font-size",
-          }}
-        >
-          {clock}
-        </div>
-        {/* La marca de respiracion solo tiene sentido durante la pausa y con el
-            panel cerrado, pero el hueco se reserva siempre. */}
-        <div
-          className="cairn-fade flex items-center gap-3.5 font-mono"
-          style={{
-            marginTop: 20,
-            fontSize: 10,
-            letterSpacing: ".3em",
-            color: "var(--fg-34)",
-            opacity: isElapsed && !panelOpen ? 1 : 0,
-            transitionProperty: "opacity",
-          }}
-        >
-          <div
-            className="cairn-breathe rounded-full"
-            style={{ width: 5, height: 5, background: "var(--color-ac)" }}
-          />
-          <div>INHALAR · EXHALAR</div>
-        </div>
-      </div>
+      <ClockBlock
+        clock={clock}
+        overline={overline}
+        panelOpen={panelOpen}
+        breathing={isElapsed}
+      />
 
       {/* La region de los paneles: 172 px abajo del borde y 142 arriba de la
           fila de botones. Los dos paneles quedan MONTADOS y se muestran con
@@ -595,6 +1060,80 @@ export default function Foco() {
             </Row>
           </Section>
 
+          <Section title="MODOS">
+            <div style={{ paddingTop: 24 }}>
+              <div style={{ fontSize: 23, fontWeight: 300 }}>
+                Modo por defecto
+              </div>
+              <div
+                className="font-mono"
+                style={{ fontSize: 11, color: "var(--fg-42)", marginTop: 6 }}
+              >
+                CÓMO SE MUESTRA CAIRN MIENTRAS CORRE EL CICLO · ELEGIR UNO LO
+                CAMBIA AHORA MISMO
+              </div>
+              {/* Elegir acá conmuta de verdad, no solo escribe el archivo:
+                  `default_mode` significa a la vez "el modo elegido" y "con
+                  cual arranca". Si el ciclo esta vencido no se ve el cambio,
+                  porque vencido siempre manda Foco. */}
+              <div className="flex gap-3" style={{ marginTop: 20 }}>
+                {MODE_OPTIONS.map((option) => (
+                  <ModeCard
+                    key={option.id}
+                    mode={option.id}
+                    label={option.label}
+                    hint={option.hint}
+                    active={settings?.defaultMode === option.id}
+                    onClick={() => void setDefaultMode(option.id)}
+                  />
+                ))}
+              </div>
+            </div>
+            <MonitorRow
+              selected={settings?.monitor ?? null}
+              onPick={(name) => void setMonitor(name)}
+            />
+          </Section>
+
+          <Section title="RUTINA">
+            <Row
+              title={title ?? "routine.md"}
+              hint={[
+                `${routine.source === null ? 0 : countCheckboxes(routine.source).total} PASOS`,
+                "MARKDOWN",
+                editedLabel(routine.modifiedMs, nowMs)?.toUpperCase(),
+              ]
+                .filter((part) => part !== undefined)
+                .join(" · ")}
+            >
+              <Action
+                label="EDITAR"
+                onClick={() => {
+                  setShowSettings(false);
+                  setShowRoutine(true);
+                  routine.startEdit();
+                }}
+              />
+              <Action dim label="ABRIR CARPETA" onClick={routine.reveal} />
+            </Row>
+          </Section>
+
+          <Section title="APARIENCIA">
+            <Row
+              title="Tema"
+              hint="AMBIENTE ELIGE SU TINTA SEGÚN EL FONDO DE CADA VENTANA"
+            >
+              {THEME_OPTIONS.map((option) => (
+                <Chip
+                  key={option.id}
+                  label={option.label}
+                  active={(settings?.theme ?? "dark") === option.id}
+                  onClick={() => void setTheme(option.id)}
+                />
+              ))}
+            </Row>
+          </Section>
+
           <Section title="SISTEMA">
             <Row
               title="Iniciar con Windows"
@@ -604,6 +1143,17 @@ export default function Foco() {
                 label="Iniciar con Windows"
                 on={settings?.autostart ?? false}
                 onChange={(next) => void setAutostart(next)}
+              />
+            </Row>
+            <div style={{ height: 1, background: "var(--fg-10)" }} />
+            <Row
+              title="Sonido al avisar"
+              hint="UN TONO CORTO Y GRAVE AL VENCER EL CICLO"
+            >
+              <Switch
+                label="Sonido al avisar"
+                on={settings?.soundOnAlert ?? false}
+                onChange={(next) => void setSound(next)}
               />
             </Row>
           </Section>
@@ -645,17 +1195,25 @@ export default function Foco() {
         >
           LISTO
         </Pill>
-        <Pill onClick={() => void snooze()}>posponer {snoozeMin}</Pill>
+        <SnoozePill
+          minutes={snoozeMin}
+          onSnooze={(minutes) => void snooze(minutes)}
+        />
         <Pill
+          alternate="reanudar"
           onClick={() => void (isPaused ? resume() : pause())}
           disabled={isElapsed}
         >
           {isPaused ? "reanudar" : "pausar"}
         </Pill>
-        <Pill active={showRoutine} onClick={toggleRoutine}>
+        <Pill
+          alternate="ocultar rutina"
+          active={showRoutine}
+          onClick={toggleRoutine}
+        >
           {showRoutine ? "ocultar rutina" : "ver rutina"}
         </Pill>
-        <Pill onClick={toggleSettings}>
+        <Pill alternate="ajustes" onClick={toggleSettings}>
           {showSettings ? "volver" : "ajustes"}
         </Pill>
       </div>

@@ -76,6 +76,8 @@
   --fg-9: color-mix(in oklab, var(--color-fg) 9%, transparent);
   --fg-8: color-mix(in oklab, var(--color-fg) 8%, transparent);
   --fg-3: color-mix(in oklab, var(--color-fg) 3%, transparent);
+  --ac-12: color-mix(in oklab, var(--color-ac) 12%, transparent);
+  --ac-22: color-mix(in oklab, var(--color-ac) 22%, transparent);
   --ac-55: color-mix(in oklab, var(--color-ac) 55%, transparent);
   --ac-70: color-mix(in oklab, var(--color-ac) 70%, transparent);
   --ac-90: color-mix(in oklab, var(--color-ac) 90%, transparent);
@@ -86,12 +88,19 @@
 /* Tema claro. Solo cambian las tres bases: las mezclas de arriba se recalculan
    solas porque estan definidas contra `--color-fg`.
 
-   El valor va en INGLES ("light"), igual que los que valida `settings.rs`, para
-   que el dia que exista el selector de tema el ajuste persistido se pueda
-   escribir tal cual en el atributo. Hoy nadie lo activa: el selector es etapa 6.
+   El valor va en INGLES ("light"), igual que los que valida `settings.rs`, asi
+   que el ajuste persistido se escribe tal cual en el atributo. Lo pone
+   `main.tsx` en las tres ventanas; `"system"` lo traduce `resolveTheme` contra
+   `prefers-color-scheme`, porque el CSS solo entiende claro u oscuro.
 
-   Ambiente NO usa esto: elige su tinta segun el fondo de la ventana de atras
-   (docs/DESIGN.md §2), no segun el tema de la app. */
+   Ambiente TAMBIEN cambia con esto, y hay que saber por que. docs/DESIGN.md §2
+   dice que su tinta se elige por el fondo de la ventana de atras y no por el
+   tema de la app -es lo correcto y no se puede implementar: la ventana es
+   transparente y no hay forma de leer que hay debajo-. El tema es la mejor
+   aproximacion disponible, y con el ajuste en "Sistema" es literalmente el tema
+   de Windows, que es lo mas cerca que estamos del fondo del escritorio. La
+   consecuencia visible: tema claro con un fondo de escritorio oscuro deja la
+   franja casi invisible, y se arregla cambiando el tema. */
 [data-theme="light"] {
   --color-bg: #efece3;
   --color-fg: #1a1c19;
@@ -120,6 +129,25 @@ body,
 html {
   scrollbar-width: thin;
   scrollbar-color: var(--fg-18) transparent;
+}
+
+/* Los controles nativos de un `input[type=number]` -las dos flechitas de
+   incremento- se dibujan con el estilo de Windows: un cuadrito blanco que en
+   esta pantalla se ve como un parche. No hay forma de estilarlos (son un
+   pseudo-elemento cerrado del motor), asi que se sacan: el handoff dibuja los
+   dos campos numericos como campos de texto pelados con el sufijo `MIN`, y los
+   valores comunes ya estan en los chips de al lado.
+
+   Van las dos formas y no es redundancia: `appearance: textfield` es la
+   estandar y la que entiende Firefox, y `::-webkit-inner-spin-button` es la
+   unica que WebView2 respeta hoy. `field-sizing` no tiene nada que ver aca. */
+input[type="number"] {
+  appearance: textfield;
+}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
 }
 
 body {
@@ -236,6 +264,44 @@ html[data-view="ambient"] body {
     background-color 150ms ease,
     color 150ms ease,
     border-color 150ms ease;
+}
+
+/* Los dos fondos de boton del handoff, como clases y NO como `style` en linea.
+   El motivo es tecnico, no de gusto: un `style={{background}}` en linea le gana
+   a cualquier regla de hover por especificidad, asi que un boton que pinta su
+   propio fondo no puede tener estado de hover. Definidos aca, el fondo de
+   reposo y el de hover viven en el mismo lugar y el componente elige cual usa.
+
+   `:not(:disabled)` para que un boton apagado no se ilumine al pasarle por
+   encima, que es la forma mas rapida de que alguien lo clickee dos veces. */
+.cairn-ghost {
+  background-color: transparent;
+}
+.cairn-ghost:not(:disabled):hover {
+  background-color: var(--fg-8);
+}
+
+.cairn-solid {
+  background-color: var(--color-ac);
+}
+.cairn-solid:not(:disabled):hover {
+  background-color: var(--color-ac-hover);
+}
+
+/* El borde de una caja seleccionable se aclara al pasar el mouse (chips y
+   tarjetas de modo del handoff). Va aparte del fondo porque las tarjetas ya
+   tienen el suyo cuando estan elegidas.
+
+   El color de reposo tiene que estar ACA por el mismo motivo que el fondo: si
+   el componente escribe `border: 1px solid var(--fg-18)` en linea, esa
+   declaracion le gana a la de hover y la regla de abajo no se aplica nunca.
+   Los componentes ponen `borderWidth` y `borderStyle` -las longhands- y dejan
+   el color a la clase. */
+.cairn-edge {
+  border-color: var(--fg-18);
+}
+.cairn-edge:not(:disabled):hover {
+  border-color: var(--fg-40);
 }
 
 /* La apertura del panel de rutina (docs/DESIGN.md §4): 450 ms con la curva del

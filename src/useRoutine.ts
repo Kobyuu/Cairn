@@ -1,8 +1,31 @@
 import { invoke } from "@tauri-apps/api/core";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toggleCheckboxAtLine, uncheckAll } from "./routine";
 
 export type RoutineMode = "read" | "edit";
+
+/**
+ * Desmarca la rutina en disco y devuelve el documento resultante.
+ *
+ * Vive afuera del hook porque tiene DOS usuarios: el `clearChecks` de abajo,
+ * que ademas actualiza la pantalla de Foco, y el boton LISTO del Widget, que no
+ * tiene panel de rutina ni necesita el resto del hook. La regla de producto es
+ * una sola -confirmar el ciclo deja la rutina limpia para la proxima pausa- y
+ * tiene que estar escrita en un solo lugar.
+ *
+ * Relee del disco en vez de confiar en lo que haya en memoria: LISTO se puede
+ * apretar sin haber abierto nunca el panel, y el archivo pudo cambiar desde
+ * afuera. `uncheckAll` devuelve la misma cadena si no habia nada marcado, asi
+ * que confirmar con la rutina ya limpia no escribe el archivo.
+ */
+export async function clearRoutineChecks(): Promise<string> {
+  const text = await invoke<string>("routine_read");
+  const next = uncheckAll(text);
+  if (next !== text) {
+    await invoke("routine_write", { content: next });
+  }
+  return next;
+}
 
 /**
  * El texto que se le muestra al usuario cuando falla el acceso al archivo.
@@ -36,6 +59,7 @@ function errorText(cause: unknown): string {
  */
 export function useRoutine() {
   const [source, setSource] = useState<string | null>(null);
+  const [modifiedMs, setModifiedMs] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
   const [mode, setMode] = useState<RoutineMode>("read");
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +99,31 @@ export function useRoutine() {
       })
       .catch((cause: unknown) => setError(errorText(cause)));
   }, [mode, read]);
+
+  // Se lee una vez al montar, aunque el panel nunca se abra: la etiqueta de
+  // arriba de Foco y la fila RUTINA de Ajustes muestran el titulo del
+  // documento, y sin esta lectura la pantalla arrancaria sin nombre.
+  useEffect(() => {
+    read()
+      .then((text) => {
+        setSource(text);
+        setError(null);
+      })
+      .catch((cause: unknown) => setError(errorText(cause)));
+  }, [read]);
+
+  // La fecha del archivo se vuelve a preguntar cada vez que el contenido
+  // cambia -lectura inicial, guardado, casilla marcada-, que son exactamente
+  // los momentos en que pudo cambiar. `routine_info` devuelve `null` si el
+  // archivo todavia no existe, y eso es un estado valido, no un error.
+  //
+  // La guarda del `null` evita el viaje de mas del arranque: sin ella el efecto
+  // corre una vez con el estado inicial vacio y otra cuando llega la lectura,
+  // preguntando dos veces por la misma respuesta.
+  useEffect(() => {
+    if (source === null) return;
+    invoke<number | null>("routine_info").then(setModifiedMs).catch(console.error);
+  }, [source]);
 
   const startEdit = useCallback(() => {
     setDraft(source ?? "");
@@ -117,31 +166,32 @@ export function useRoutine() {
     [source, read, write],
   );
 
+  /** El desmarcado compartido, pero en la cola: no puede cruzarse con la
+   *  escritura de una casilla que todavia esta en vuelo. */
+  const clearOnDisk = useCallback(() => enqueue(clearRoutineChecks), []);
+
   /**
-   * Desmarca la rutina entera. Corre al confirmar el ciclo con LISTO: la pausa
-   * siguiente arranca con la rutina limpia, sin desmarcarla a mano.
-   *
-   * Relee del disco en vez de usar el `source` en memoria porque LISTO se puede
-   * apretar sin haber abierto nunca el panel -y entonces no hay nada en
-   * memoria-, y porque el archivo pudo cambiar desde afuera. `uncheckAll`
-   * devuelve la misma cadena si no habia nada marcado, asi que confirmar un
-   * ciclo con la rutina ya limpia no escribe el archivo.
+   * Desmarca la rutina entera y actualiza la pantalla. Corre al confirmar el
+   * ciclo con LISTO: la pausa siguiente arranca con la rutina limpia, sin
+   * desmarcarla a mano.
    */
   const clearChecks = useCallback(() => {
     // Con una edicion a medias no se toca el disco: el borrador sin guardar es
     // lo unico que el usuario no puede recuperar.
     if (mode === "edit") return;
-    read()
-      .then((text) => {
-        const next = uncheckAll(text);
-        setSource(next);
-        if (next !== text) return write(next);
-      })
+    clearOnDisk()
+      .then(setSource)
       .catch((cause: unknown) => setError(errorText(cause)));
-  }, [mode, read, write]);
+  }, [mode, clearOnDisk]);
+
+  /** Abre el Explorador con `routine.md` seleccionado (fila RUTINA de Ajustes). */
+  const reveal = useCallback(() => {
+    invoke("routine_reveal").catch((cause: unknown) => setError(errorText(cause)));
+  }, []);
 
   return {
     source,
+    modifiedMs,
     draft,
     mode,
     error,
@@ -152,5 +202,6 @@ export function useRoutine() {
     setDraft,
     save,
     toggleLine,
+    reveal,
   };
 }

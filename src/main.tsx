@@ -1,5 +1,9 @@
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { SETTINGS_CHANGED, type Settings } from "./settings";
+import { resolveTheme } from "./theme";
 import Ambient from "./views/Ambient";
 import Foco from "./views/Foco";
 import Widget from "./views/Widget";
@@ -24,6 +28,47 @@ const view = resolveView();
 // y Ambiente en index.css). Se setea ANTES de renderizar para que no haya un
 // primer pintado con el fondo opaco del tema.
 document.documentElement.dataset.view = view;
+
+// El tema, para las TRES ventanas y sin pasar por React.
+//
+// Vive aca y no en un componente porque no es estado de ninguna vista: es un
+// atributo del documento que el CSS lee (`[data-theme="light"]` en index.css).
+// Las tres ventanas estan vivas a la vez -aunque dos esten escondidas-, asi que
+// cada una se suscribe a `settings-changed` y cambia sola; sin eso, el Widget
+// se quedaria en el tema viejo hasta que alguien lo reabra.
+//
+// El primer pintado es siempre el oscuro, que es el default del producto: el
+// ajuste llega por IPC un instante despues. Con tema claro elegido eso es un
+// parpadeo de un cuadro al arrancar, y el precio de no bloquear el render
+// esperando al disco.
+const prefersLight = window.matchMedia("(prefers-color-scheme: light)");
+let themeSetting = "dark";
+
+function paintTheme() {
+  document.documentElement.dataset.theme = resolveTheme(
+    themeSetting,
+    prefersLight.matches,
+  );
+}
+
+function watchTheme() {
+  paintTheme();
+  // Con el ajuste en "Sistema", cambiar el tema de Windows tiene que alcanzar
+  // a la app sin reiniciarla.
+  prefersLight.addEventListener("change", paintTheme);
+  listen<Settings>(SETTINGS_CHANGED, (event) => {
+    themeSetting = event.payload.theme;
+    paintTheme();
+  }).catch(console.error);
+  invoke<Settings>("settings_snapshot")
+    .then((settings) => {
+      themeSetting = settings.theme;
+      paintTheme();
+    })
+    .catch(console.error);
+}
+
+watchTheme();
 
 const VIEWS: Record<View, React.ComponentType> = {
   foco: Foco,

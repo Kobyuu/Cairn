@@ -172,3 +172,73 @@ export function uncheckAll(markdown: string): string {
   }
   return lines.join("\n");
 }
+
+/**
+ * El titulo del documento: el primer titulo de nivel 1 del markdown.
+ *
+ * Es la etiqueta que el handoff dibuja arriba de todo en Foco -`CORRECCIÓN DE
+ * POSTURA`, entre dos hairlines- y el nombre de la fila RUTINA de Ajustes. Sale
+ * del contenido y no del nombre del archivo porque el archivo siempre se llama
+ * `routine.md`: lo que identifica a la rutina es lo que Manu escribio arriba.
+ *
+ * Devuelve `null` si no hay ninguno. Quien llama decide el reemplazo; esta
+ * funcion no inventa un titulo.
+ */
+export function routineTitle(markdown: string): string | null {
+  for (const line of markdown.split("\n")) {
+    // Con operaciones de string y no con un `^ {0,3}# +(.*)$`. El regex era mas
+    // corto y tenia backtracking: dos cuantificadores que se pueden repartir la
+    // misma tira de espacios, que es como se llega a tiempo cuadratico sobre un
+    // archivo que escribe el usuario.
+    const body = line.trimStart();
+    // Hasta tres espacios de indentacion siguen siendo un titulo en markdown.
+    if (line.length - body.length > 3) continue;
+    // La almohadilla tiene que venir seguida de un espacio: `#rutina` es una
+    // etiqueta y no un titulo, y `## Cuello` es de nivel 2.
+    if (!body.startsWith("# ")) continue;
+
+    let title = body.slice(2).trimEnd();
+    // Las almohadillas de cierre (`# Titulo ###`) son opcionales en markdown y
+    // no son parte del texto. Markdown pide un espacio delante, asi que
+    // `# Titulo###` sigue siendo texto. El unico cuantificador del regex esta
+    // pegado a `$`, asi que no hay nada que repartir ni por donde volver.
+    const closing = /(?:^|\s)#+$/.exec(title);
+    if (closing !== null) {
+      title = title.slice(0, closing.index).trimEnd();
+    }
+    title = title.trim();
+    if (title.length > 0) return title;
+  }
+  return null;
+}
+
+/**
+ * "editado hoy" / "editado ayer" / "editado hace N días", para la fila RUTINA
+ * de Ajustes. `null` si el archivo todavia no tiene fecha.
+ *
+ * Cuenta dias de CALENDARIO y no bloques de 24 horas: guardar anoche a las 23 y
+ * mirar hoy al mediodia es "ayer", aunque hayan pasado trece horas. El "ahora"
+ * se inyecta, como en `timer.ts`, para poder testearlo sin tocar el reloj.
+ *
+ * El texto lo arma `Intl.RelativeTimeFormat`, que ya viene en el webview: con
+ * `numeric: "auto"` resuelve solo "hoy" y "ayer" y la pluralizacion del resto.
+ */
+/** Se arma una sola vez: `editedLabel` la llama en cada render de Ajustes. */
+const RELATIVE_DAYS = new Intl.RelativeTimeFormat("es", { numeric: "auto" });
+
+export function editedLabel(modifiedMs: number | null, nowMs: number): string | null {
+  if (modifiedMs === null) return null;
+
+  const startOfDay = (ms: number) => {
+    const date = new Date(ms);
+    date.setHours(0, 0, 0, 0);
+    return date.getTime();
+  };
+  // Un archivo con fecha futura -reloj del sistema movido, copia restaurada- se
+  // lee como hoy antes que como "dentro de 5 dias", que seria absurdo.
+  const days = Math.min(
+    0,
+    Math.round((startOfDay(modifiedMs) - startOfDay(nowMs)) / 86_400_000),
+  );
+  return `editado ${RELATIVE_DAYS.format(days, "day")}`;
+}

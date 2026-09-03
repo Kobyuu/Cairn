@@ -116,11 +116,12 @@ fn on_menu_event(app: &AppHandle, event: MenuEvent) {
         ID_MODE_AMBIENT => modes::set_mode(app, Mode::Ambient),
         ID_TOGGLE => toggle_pause(app),
         // Los ajustes viven adentro de la pantalla de Foco, asi que "Ajustes"
-        // es "traeme Foco". Cambia el modo de verdad -y por lo tanto lo
-        // persiste-: dejar la app mostrando Foco mientras el modo guardado dice
-        // Ambiente seria justo la clase de mentira que la marca del menu existe
-        // para evitar.
-        ID_SETTINGS => modes::set_mode(app, Mode::Focus),
+        // es "traeme Foco". Va por `show_mode` y NO por `set_mode`: abrir los
+        // ajustes es un pedido de una vez, no elegir el modo con el que la app
+        // tiene que arrancar. Cuando pasaba por `set_mode`, elegir Widget como
+        // modo por defecto y despues abrir Ajustes reescribia el archivo con
+        // "foco", y la app volvia a arrancar en Foco sin que nadie se lo pida.
+        ID_SETTINGS => modes::show_mode(app, Mode::Focus),
         // La UNICA salida real de la app. Todo lo demas esconde ventanas.
         ID_QUIT => app.exit(0),
         _ => {}

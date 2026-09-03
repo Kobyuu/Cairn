@@ -66,15 +66,41 @@ tienen que estar en verde antes de cerrar cualquier etapa.
    CARGO_TARGET_DIR=src-tauri/target-clippy cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
    ```
 
-2. **`src-tauri/.cargo/config.toml` sube la pila de rustc a 256 MB.** Sin eso,
-   rustc muere compilando el crate `windows` con `STATUS_STACK_BUFFER_OVERRUN`
+2. **`src-tauri/.cargo/config.toml` sube la pila de rustc a 256 MB.** Sin eso, rustc
+   muere compilando el crate `windows` con `STATUS_STACK_BUFFER_OVERRUN`
    (0xc0000409). El síntoma engaña: cuando rustc muere a mitad de escribir un
-   `.rmeta`, el crate que depende de ese metadato falla después con errores de
-   resolución de macros que no tienen nada que ver
-   (`cannot determine resolution for the macro ::core::concat`,
-   `import resolution is stuck`). **Siempre buscar el ICE de más arriba, no la
-   cascada.** El archivo está commiteado, así que no hay que exportar nada; si
-   alguna vez vuelve a fallar, subir el número.
+   `.rmeta`, el crate que depende de ese metadato falla después con errores que
+   no tienen nada que ver (`cannot determine resolution for the macro
+   ::core::concat`, `import resolution is stuck`, `can't find crate for url`).
+   **Siempre buscar el ICE de más arriba, no la cascada.**
+
+   **El archivo vive en `src-tauri/` y no en la raíz, y la asimetría es
+   deliberada** (medida en la etapa 6). Cargo busca `.cargo/config.toml` en los
+   ancestros del **directorio actual**, no en el del manifiesto, así que:
+   `pnpm tauri dev` / `tauri build` —cwd adentro de `src-tauri`— **sí** lo leen,
+   y son los que compilan el árbol entero con `windows` incluido; `cargo test` y
+   `cargo clippy --manifest-path ...` desde la raíz (§10.1) **no**, y está bien
+   que no.
+
+   **El número tiene techo por arriba, no sólo piso.** Se probó mover el archivo
+   a la raíz y rompe: con 256 MB aplicados a `cargo test`, rustc *reserva* esa
+   pila por hilo y con la cantidad de jobs por defecto falla la reserva misma,
+   reportada con el mismo `0xc0000409`. Con 64 MB desborda `windows`; con 512 MB
+   desborda `cairn`.
+
+   **El precio:** ningún comando corrido desde la raíz puede recompilar
+   `windows` **de cero**, y eso incluye a clippy, que tiene su propio
+   `target-clippy` y por lo tanto su propia copia del crate. Sólo hace falta si
+   algo cambia el set de features de `windows` —sacar o agregar un plugin—, y
+   entonces los dos comandos fallan una vez. La receta medida para ese caso:
+
+   ```
+   RUST_MIN_STACK=268435456 cargo build --manifest-path src-tauri/Cargo.toml -j 2
+   RUST_MIN_STACK=268435456 CARGO_TARGET_DIR=src-tauri/target-clippy      cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -j 2 -- -D warnings
+   ```
+
+   Después de esa vuelta, la caché queda tibia y los comandos normales de la
+   tabla de arriba vuelven a funcionar tal cual.
 
 ## 3. Estructura del proyecto
 

@@ -13,7 +13,7 @@
 
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{Map, Value};
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter};
 use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_store::StoreExt;
 
@@ -26,7 +26,12 @@ const DEFAULT_THEME: &str = "dark";
 /// es un archivo que el usuario puede abrir con el Bloc de Notas (CLAUDE.md §3):
 /// un modo inventado tiene que morir aca y no llegar a la etapa 4.
 const MODES: [&str; 3] = ["foco", "widget", "ambient"];
-const THEMES: [&str; 2] = ["dark", "light"];
+/// `"system"` sigue a `prefers-color-scheme` del webview; lo traduce el
+/// frontend (`src/theme.ts`), no el core. El default sigue siendo `"dark"`
+/// -es el default del producto (docs/DESIGN.md §2)- aunque el prototipo del
+/// handoff arranque en Sistema: cambiarlo mandaria al tema claro a quien nunca
+/// lo pidio.
+const THEMES: [&str; 3] = ["system", "dark", "light"];
 
 /// Posicion del widget, en pixeles fisicos (D6).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, serde::Deserialize)]
@@ -55,6 +60,18 @@ pub struct Settings {
     pub widget_pos: Option<WidgetPos>,
     pub autostart: bool,
     pub theme: String,
+    /// Un tono corto y grave al vencer el ciclo. Apagado por defecto: la app
+    /// esta encendida ocho horas y un sonido que no pediste es peor que uno
+    /// que falta.
+    pub sound_on_alert: bool,
+    /// En que monitor aparecen Foco y Ambiente. Es el NOMBRE que reporta
+    /// Windows (`\\.\DISPLAY1`), que es lo unico estable: el orden de la lista
+    /// y las coordenadas cambian al enchufar o desenchufar una pantalla.
+    ///
+    /// `None` = el primario. No se guarda un nombre por default a proposito:
+    /// "el primario, el que sea" sobrevive a cambiar el monitor principal
+    /// desde Windows, y un nombre clavado no.
+    pub monitor: Option<String>,
 }
 
 impl Default for Settings {
@@ -66,6 +83,8 @@ impl Default for Settings {
             widget_pos: None,
             autostart: false,
             theme: DEFAULT_THEME.to_string(),
+            sound_on_alert: false,
+            monitor: None,
         }
     }
 }
@@ -108,6 +127,8 @@ impl Settings {
             widget_pos: field(json, "widget_pos", defaults.widget_pos),
             autostart: field(json, "autostart", defaults.autostart),
             theme: one_of(field(json, "theme", defaults.theme), &THEMES, DEFAULT_THEME),
+            sound_on_alert: field(json, "sound_on_alert", defaults.sound_on_alert),
+            monitor: field(json, "monitor", defaults.monitor),
         }
     }
 
@@ -126,6 +147,13 @@ impl Settings {
         }
         map.insert("autostart".into(), self.autostart.into());
         map.insert("theme".into(), self.theme.clone().into());
+        map.insert("sound_on_alert".into(), self.sound_on_alert.into());
+        // Igual que `widget_pos`: en `None` se omite. La ausencia de la clave ya
+        // significa "el primario", y un `null` en un archivo que el usuario
+        // abre a mano es ruido.
+        if let Some(name) = &self.monitor {
+            map.insert("monitor".into(), name.clone().into());
+        }
         Value::Object(map)
     }
 }
@@ -231,16 +259,72 @@ pub fn settings_set_autostart(app: AppHandle, enabled: bool) -> Result<Settings,
         applied.map_err(|error| format!("no se pudo cambiar el inicio con Windows: {error}"))?;
     }
     update(&app, |settings| settings.autostart = enabled);
-    // `load` y no `settings_snapshot`: el registro se acaba de aplicar y el JSON
-    // se acaba de escribir, asi que volver a preguntarle al plugin solo agrega
-    // una segunda escritura del archivo por cada toggle.
-    Ok(load(&app))
+    // `broadcast` y no `settings_snapshot`: el registro se acaba de aplicar y el
+    // JSON se acaba de escribir, asi que volver a preguntarle al plugin solo
+    // agrega una segunda escritura del archivo por cada toggle. Y emite, como
+    // todos los demas setters: que un solo ajuste sea la excepcion a "todo
+    // cambio avisa" es la clase de detalle con la que tropieza la feature que
+    // venga despues.
+    Ok(broadcast(&app))
+}
+
+/// Nombre del evento con el que el core avisa que los ajustes cambiaron.
+///
+/// Existe por el tema: las tres ventanas estan vivas a la vez -aunque dos
+/// esten escondidas- y el tema tiene que cambiar en las tres. Sin el evento,
+/// el Widget seguiria en oscuro hasta que alguien lo reabra.
+const EVENT_CHANGED: &str = "settings-changed";
+
+/// Lee los ajustes del disco y se los emite a todas las ventanas.
+///
+/// La llaman los comandos de aca abajo y tambien `modes::set_mode`, para que
+/// cambiar de modo desde la bandeja actualice la tarjeta de MODOS que puede
+/// estar abierta en Ajustes.
+///
+/// El `emit` falla como mucho por un webview que ya no esta; se loguea y no se
+/// propaga, porque el ajuste YA quedo en disco y devolver error haria que el
+/// frontend creyera que no se guardo.
+pub fn broadcast(app: &AppHandle) -> Settings {
+    let settings = load(app);
+    if let Err(error) = app.emit(EVENT_CHANGED, &settings) {
+        eprintln!("[cairn] no se pudo emitir {EVENT_CHANGED}: {error}");
+    }
+    settings
+}
+
+/// Escribe el ajuste, lo emite y lo devuelve.
+fn apply<F: FnOnce(&mut Settings)>(app: &AppHandle, change: F) -> Settings {
+    update(app, change);
+    broadcast(app)
+}
+
+/// Cambia el tema. `theme` se acota a la lista conocida antes de guardarse: el
+/// valor entra por IPC y un string arbitrario no puede llegar a `store.json`.
+///
+/// Quien traduce `"system"` a claro u oscuro es el frontend (`src/theme.ts`):
+/// `prefers-color-scheme` solo existe adentro del webview.
+#[tauri::command]
+pub fn settings_set_theme(app: AppHandle, theme: String) -> Settings {
+    let theme = one_of(theme, &THEMES, DEFAULT_THEME);
+    apply(&app, |settings| settings.theme = theme)
+}
+
+/// Enciende o apaga el tono del aviso.
+#[tauri::command]
+pub fn settings_set_sound(app: AppHandle, enabled: bool) -> Settings {
+    apply(&app, |settings| settings.sound_on_alert = enabled)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
+
+    /// Un nombre de monitor real de Windows. Va como cadena CRUDA (`r"..."`)
+    /// una sola vez: escrito con escapes, `"\\.\DISPLAY2"` ni compila -`\D` no
+    /// es un escape valido en Rust- y con los escapes correctos
+    /// (`"\\\\.\\DISPLAY2"`) nadie puede leer de un vistazo cuantas barras hay.
+    const DISPLAY_2: &str = r"\\.\DISPLAY2";
 
     fn populated() -> Settings {
         Settings {
@@ -250,6 +334,8 @@ mod tests {
             widget_pos: Some(WidgetPos { x: 1200, y: 80 }),
             autostart: true,
             theme: "light".into(),
+            sound_on_alert: true,
+            monitor: Some(DISPLAY_2.into()),
         }
     }
 
@@ -262,6 +348,8 @@ mod tests {
             "widget_pos": { "x": 1200, "y": 80 },
             "autostart": true,
             "theme": "light",
+            "sound_on_alert": true,
+            "monitor": DISPLAY_2,
         });
         assert_eq!(Settings::from_json(&json), populated());
     }
@@ -291,6 +379,8 @@ mod tests {
             "widget_pos": "1200,80",
             "autostart": true,
             "theme": "light",
+            "sound_on_alert": "si",
+            "monitor": 2,
         });
         let expected = Settings {
             interval_min: DEFAULT_INTERVAL_MIN,
@@ -299,6 +389,8 @@ mod tests {
             widget_pos: None,
             autostart: true,
             theme: "light".into(),
+            sound_on_alert: false,
+            monitor: None,
         };
         assert_eq!(Settings::from_json(&json), expected);
     }
@@ -330,6 +422,17 @@ mod tests {
     }
 
     #[test]
+    fn the_three_themes_of_the_handoff_are_accepted() {
+        // El chip "Sistema" es una opcion del handoff, no un invento del
+        // frontend: si `one_of` no la reconociera, elegirla escribiria "dark"
+        // en el archivo y el chip volveria solo a Oscuro al reabrir.
+        for theme in ["system", "dark", "light"] {
+            let settings = Settings::from_json(&json!({ "theme": theme }));
+            assert_eq!(settings.theme, theme);
+        }
+    }
+
+    #[test]
     fn unknown_keys_are_ignored() {
         let json = json!({ "interval_min": 30, "algo_que_no_existe": true });
         assert_eq!(Settings::from_json(&json).interval_min, 30);
@@ -347,9 +450,10 @@ mod tests {
     }
 
     #[test]
-    fn a_none_widget_pos_is_omitted_not_nulled() {
+    fn the_optional_fields_are_omitted_not_nulled() {
         let json = Settings::default().to_json();
         assert!(json.get("widget_pos").is_none());
+        assert!(json.get("monitor").is_none());
         assert_eq!(json.get("interval_min"), Some(&json!(DEFAULT_INTERVAL_MIN)));
     }
 
@@ -364,7 +468,16 @@ mod tests {
         keys.sort_unstable();
         assert_eq!(
             keys,
-            ["autostart", "default_mode", "interval_min", "quick_snooze_min", "theme", "widget_pos"]
+            [
+                "autostart",
+                "default_mode",
+                "interval_min",
+                "monitor",
+                "quick_snooze_min",
+                "sound_on_alert",
+                "theme",
+                "widget_pos"
+            ]
         );
     }
 
@@ -383,6 +496,8 @@ mod tests {
                 "widgetPos": { "x": 1200, "y": 80 },
                 "autostart": true,
                 "theme": "light",
+                "soundOnAlert": true,
+                "monitor": DISPLAY_2,
             })
         );
     }

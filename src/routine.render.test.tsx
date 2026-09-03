@@ -237,6 +237,7 @@ describe.each(Object.entries(CORPUS))(
 function stubRoutine(source: string): ReturnType<typeof useRoutine> {
   return {
     source,
+    modifiedMs: null,
     draft: "",
     mode: "read",
     error: null,
@@ -247,6 +248,7 @@ function stubRoutine(source: string): ReturnType<typeof useRoutine> {
     setDraft: () => {},
     save: () => {},
     toggleLine: () => {},
+    reveal: () => {},
   };
 }
 

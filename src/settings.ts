@@ -16,5 +16,21 @@ export interface Settings {
   /** `null` = todavia nadie movio el widget. La etapa 4 decide la posicion. */
   widgetPos: WidgetPos | null;
   autostart: boolean;
+  /** `"system"` | `"dark"` | `"light"`. Lo traduce `resolveTheme`. */
   theme: string;
+  soundOnAlert: boolean;
+  /** El nombre del monitor elegido, o `null` = el primario. */
+  monitor: string | null;
 }
+
+/** Una pantalla conectada, como la lista `modes_monitors`. */
+export interface MonitorInfo {
+  /** El identificador de Windows (`\\.\DISPLAY1`). Es lo que se guarda. */
+  name: string;
+  width: number;
+  height: number;
+  primary: boolean;
+}
+
+/** El evento con el que Rust avisa que `store.json` cambio. */
+export const SETTINGS_CHANGED = "settings-changed";
