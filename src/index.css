@@ -42,7 +42,8 @@
      El nombre con "Variable" es el que registra el paquete de la variante
      variable; los que siguen son la red de contencion si el `.woff2` no
      cargara. */
-  --font-sans: "Newsreader Variable", Newsreader, Georgia, "Times New Roman", serif;
+  --font-sans:
+    "Newsreader Variable", Newsreader, Georgia, "Times New Roman", serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
 }
 
@@ -59,15 +60,22 @@
   --fg-38: color-mix(in oklab, var(--color-fg) 38%, transparent);
   --fg-34: color-mix(in oklab, var(--color-fg) 34%, transparent);
   --fg-30: color-mix(in oklab, var(--color-fg) 30%, transparent);
+  --fg-46: color-mix(in oklab, var(--color-fg) 46%, transparent);
+  --fg-40: color-mix(in oklab, var(--color-fg) 40%, transparent);
+  --fg-26: color-mix(in oklab, var(--color-fg) 26%, transparent);
   --fg-25: color-mix(in oklab, var(--color-fg) 25%, transparent);
+  --fg-24: color-mix(in oklab, var(--color-fg) 24%, transparent);
   --fg-22: color-mix(in oklab, var(--color-fg) 22%, transparent);
   --fg-20: color-mix(in oklab, var(--color-fg) 20%, transparent);
   --fg-18: color-mix(in oklab, var(--color-fg) 18%, transparent);
+  --fg-16: color-mix(in oklab, var(--color-fg) 16%, transparent);
+  --fg-14: color-mix(in oklab, var(--color-fg) 14%, transparent);
   --fg-13: color-mix(in oklab, var(--color-fg) 13%, transparent);
   --fg-12: color-mix(in oklab, var(--color-fg) 12%, transparent);
   --fg-10: color-mix(in oklab, var(--color-fg) 10%, transparent);
   --fg-9: color-mix(in oklab, var(--color-fg) 9%, transparent);
   --fg-8: color-mix(in oklab, var(--color-fg) 8%, transparent);
+  --fg-3: color-mix(in oklab, var(--color-fg) 3%, transparent);
   --ac-55: color-mix(in oklab, var(--color-ac) 55%, transparent);
   --ac-70: color-mix(in oklab, var(--color-ac) 70%, transparent);
   --ac-90: color-mix(in oklab, var(--color-ac) 90%, transparent);
@@ -224,5 +232,41 @@ html[data-view="ambient"] body {
 
 /* Hover: 150 ms y SOLO de color (docs/DESIGN.md §3). */
 .cairn-press {
-  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    border-color 150ms ease;
+}
+
+/* La apertura del panel de rutina (docs/DESIGN.md §4): 450 ms con la curva del
+   handoff para lo que se mueve, 300 ms lineal para lo que se desvanece.
+
+   Las clases llevan solo la duracion y la curva; QUE propiedad se anima lo dice
+   cada elemento en linea, porque son distintas -`top`, `padding-top`,
+   `font-size`- y una transicion sobre `all` haria animar tambien el color al
+   cambiar de tema. */
+.cairn-shift {
+  transition-duration: 450ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cairn-fade {
+  transition-duration: 300ms;
+  transition-timing-function: ease;
+}
+
+/* Con movimiento reducido el panel se abre igual, pero de golpe: la informacion
+   no cambia, solo desaparece el recorrido. */
+@media (prefers-reduced-motion: reduce) {
+  .cairn-shift,
+  .cairn-fade {
+    transition-duration: 0ms !important;
+  }
+}
+
+/* El `<textarea>` de la rutina es la unica parte de la app donde SI se escribe
+   y se selecciona texto, contra el `user-select: none` global del `body`. */
+textarea {
+  user-select: text;
+  cursor: text;
 }

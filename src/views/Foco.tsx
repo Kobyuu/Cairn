@@ -1,8 +1,10 @@
 import { useState } from "react";
 import type { Phase } from "../timer";
 import { elapsedMs, formatDuration, parseMinutes, remainingMs } from "../timer";
+import { useRoutine } from "../useRoutine";
 import { useSettings } from "../useSettings";
 import { useTimer } from "../useTimer";
+import Routine from "./Routine";
 
 // Pantalla de Foco segun docs/DESIGN.md §4 (direccion "Aliento").
 //
@@ -25,41 +27,71 @@ const OVERLINE: Record<Phase["kind"], string> = {
   running: "falta para la pausa",
 };
 
+/**
+ * Cuelga una capa circular de `size` px del ancla del fondo.
+ *
+ * Se centra con margenes negativos y no con `translate(-50%,-50%)` porque el
+ * `transform` de estas capas ya esta ocupado: las animaciones de respiracion
+ * (`cairn-halo`, `cairn-wash`) lo usan para escalar, y una segunda regla de
+ * transform lo pisaria y mandaria los circulos a la esquina.
+ */
+function centered(size: number) {
+  return {
+    left: "50%",
+    top: 0,
+    width: size,
+    height: size,
+    marginLeft: -size / 2,
+    marginTop: -size / 2,
+  } as const;
+}
+
 /** Las capas de fondo: wash, tres halos desfasados, arco, grano y viñeta. */
-function Backdrop() {
+function Backdrop({ lifted }: Readonly<{ lifted: boolean }>) {
   return (
     <>
+      {/* El ancla de las capas circulares. Con un panel abierto sube del centro
+          al 22 % para dejarle la mitad de abajo al contenido (handoff "Cairn
+          Rutina"). Es un div de altura cero: solo aporta el punto del que
+          cuelgan los circulos. */}
       <div
-        className="cairn-wash pointer-events-none absolute rounded-full"
+        className="cairn-shift pointer-events-none absolute right-0 left-0"
         style={{
-          width: 900,
-          height: 900,
-          background:
-            "radial-gradient(circle, var(--fg-9) 0%, transparent 62%)",
+          top: lifted ? "22%" : "50%",
+          height: 0,
+          transitionProperty: "top",
         }}
-      />
-      {/* 660 / 520 / 400 px, bordes al 13 / 10 / 8 %, desfase 0 / .7 / 1.4 s.
-          El desfase es lo que hace que respiren como uno y no como tres. */}
-      {[
-        { size: 660, tint: "var(--fg-13)", delay: "0s" },
-        { size: 520, tint: "var(--fg-10)", delay: "0.7s" },
-        { size: 400, tint: "var(--fg-8)", delay: "1.4s" },
-      ].map((halo) => (
+      >
         <div
-          key={halo.size}
-          className="cairn-halo pointer-events-none absolute rounded-full"
+          className="cairn-wash absolute rounded-full"
           style={{
-            width: halo.size,
-            height: halo.size,
-            border: `1px solid ${halo.tint}`,
-            animationDelay: halo.delay,
+            ...centered(900),
+            background:
+              "radial-gradient(circle, var(--fg-9) 0%, transparent 62%)",
           }}
         />
-      ))}
-      <div
-        className="cairn-turn pointer-events-none absolute rounded-full"
-        style={{ width: 212, height: 212, borderTop: "1px solid var(--ac-55)" }}
-      />
+        {/* 660 / 520 / 400 px, bordes al 13 / 10 / 8 %, desfase 0 / .7 / 1.4 s.
+            El desfase es lo que hace que respiren como uno y no como tres. */}
+        {[
+          { size: 660, tint: "var(--fg-13)", delay: "0s" },
+          { size: 520, tint: "var(--fg-10)", delay: "0.7s" },
+          { size: 400, tint: "var(--fg-8)", delay: "1.4s" },
+        ].map((halo) => (
+          <div
+            key={halo.size}
+            className="cairn-halo absolute rounded-full"
+            style={{
+              ...centered(halo.size),
+              border: `1px solid ${halo.tint}`,
+              animationDelay: halo.delay,
+            }}
+          />
+        ))}
+        <div
+          className="cairn-turn absolute rounded-full"
+          style={{ ...centered(212), borderTop: "1px solid var(--ac-55)" }}
+        />
+      </div>
       <div
         className="pointer-events-none absolute inset-0"
         style={{
@@ -80,10 +112,34 @@ function Backdrop() {
           rescato de la direccion "Grafica". */}
       {(
         [
-          { key: "tl", top: 34, left: 44, borderTop: HAIRLINE, borderLeft: HAIRLINE },
-          { key: "tr", top: 34, right: 44, borderTop: HAIRLINE, borderRight: HAIRLINE },
-          { key: "bl", bottom: 34, left: 44, borderBottom: HAIRLINE, borderLeft: HAIRLINE },
-          { key: "br", bottom: 34, right: 44, borderBottom: HAIRLINE, borderRight: HAIRLINE },
+          {
+            key: "tl",
+            top: 34,
+            left: 44,
+            borderTop: HAIRLINE,
+            borderLeft: HAIRLINE,
+          },
+          {
+            key: "tr",
+            top: 34,
+            right: 44,
+            borderTop: HAIRLINE,
+            borderRight: HAIRLINE,
+          },
+          {
+            key: "bl",
+            bottom: 34,
+            left: 44,
+            borderBottom: HAIRLINE,
+            borderLeft: HAIRLINE,
+          },
+          {
+            key: "br",
+            bottom: 34,
+            right: 44,
+            borderBottom: HAIRLINE,
+            borderRight: HAIRLINE,
+          },
         ] as const
       ).map(({ key, ...corner }) => (
         <div
@@ -94,6 +150,23 @@ function Backdrop() {
       ))}
     </>
   );
+}
+
+/**
+ * La pista itálica del pie: dice qué se puede hacer ahora mismo.
+ *
+ * Vive afuera del componente porque es una decisión de tres ramas y adentro de
+ * un `return` es un ternario anidado, que es exactamente lo que no se entiende
+ * de un vistazo seis meses después.
+ */
+function footerHint(routineOpen: boolean, editing: boolean): string {
+  if (routineOpen && editing) {
+    return "los cambios se guardan en tu documento de rutina";
+  }
+  if (routineOpen) {
+    return "tocá una casilla para marcarla · el ciclo sigue esperando";
+  }
+  return "el ciclo no vuelve a contar hasta que confirmás";
 }
 
 /** Etiqueta entre dos hairlines de 56 px. Mono 10 px, 38 %. */
@@ -120,15 +193,30 @@ function Pill({
   children,
   onClick,
   solid = false,
+  active = false,
   disabled = false,
   padding = "12px 20px",
 }: Readonly<{
   children: React.ReactNode;
   onClick: () => void;
   solid?: boolean;
+  active?: boolean;
   disabled?: boolean;
   padding?: string;
 }>) {
+  // `active` marca el panel abierto: la pastilla se tiñe de acento sin llegar a
+  // ser sólida, que es lo que distingue "esto está abierto" de "esta es LA
+  // acción de la pantalla".
+  let ink = "var(--fg-66)";
+  let edge = "var(--fg-20)";
+  if (solid) {
+    ink = "var(--color-bg)";
+    edge = "var(--color-ac)";
+  } else if (active) {
+    ink = "var(--color-ac)";
+    edge = "var(--ac-55)";
+  }
+
   return (
     <button
       type="button"
@@ -140,8 +228,8 @@ function Pill({
         fontSize: 12,
         letterSpacing: solid ? ".14em" : ".06em",
         background: solid ? "var(--color-ac)" : "transparent",
-        color: solid ? "var(--color-bg)" : "var(--fg-66)",
-        border: solid ? "1px solid var(--color-ac)" : "1px solid var(--fg-20)",
+        color: ink,
+        border: `1px solid ${edge}`,
       }}
     >
       {children}
@@ -280,13 +368,39 @@ export default function Foco() {
     setQuickSnoozeMinutes,
   } = useTimer();
   const { settings, setAutostart } = useSettings();
+  const routine = useRoutine();
   const [showSettings, setShowSettings] = useState(false);
+  const [showRoutine, setShowRoutine] = useState(false);
   const [customMinutes, setCustomMinutes] = useState("");
+
+  // Los dos paneles comparten la misma region y el mismo estado "abierto": el
+  // encabezado se encoge una sola vez, no una por panel.
+  const panelOpen = showSettings || showRoutine;
+
+  const toggleRoutine = () => {
+    const opening = !showRoutine;
+    setShowRoutine(opening);
+    if (opening) {
+      setShowSettings(false);
+      // Se relee del disco en cada apertura: el archivo es la fuente de verdad
+      // y puede haber cambiado desde afuera con el Bloc de Notas.
+      routine.reload();
+    }
+  };
+
+  const toggleSettings = () => {
+    const opening = !showSettings;
+    setShowSettings(opening);
+    if (opening) setShowRoutine(false);
+  };
 
   if (snapshot === null) {
     return (
       <main className="flex h-full items-center justify-center font-sans">
-        <p className="font-mono" style={{ fontSize: 10, letterSpacing: ".3em", color: "var(--fg-38)" }}>
+        <p
+          className="font-mono"
+          style={{ fontSize: 10, letterSpacing: ".3em", color: "var(--fg-38)" }}
+        >
           CARGANDO
         </p>
       </main>
@@ -314,15 +428,106 @@ export default function Foco() {
       // -solo dejaria una ventana de pantalla completa "flotando" fuera de
       // lugar-. El drag region con "deep" sigue siendo la solucion correcta
       // para el Widget, que si es una ventana chica y movible.
-      className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden font-sans"
+      className="relative h-full w-full overflow-hidden font-sans"
     >
-      <Backdrop />
-      <Overline>{showSettings ? "AJUSTES" : `CICLO DE ${intervalMin} MIN`}</Overline>
+      <Backdrop lifted={panelOpen} />
+      <Overline>
+        {showSettings ? "AJUSTES" : `CICLO DE ${intervalMin} MIN`}
+      </Overline>
 
-      {showSettings ? (
+      {/* El encabezado. Con un panel abierto sube y el cronometro se encoge de
+          196 a 60 px; la fila de botones NO se mueve (docs/DESIGN.md §4), y por
+          eso esta anclada al pie y no colgando de este bloque. */}
+      {/* Con el panel CERRADO el bloque va centrado en la ventana, que es donde
+          esta el halo: si el cronometro se queda arriba y el halo en el medio,
+          la pantalla se parte en dos mitades que no se hablan. Los 121 px son
+          la mitad del alto del bloque (sobre-linea + cronometro de 196 px +
+          INHALAR), asi que `calc(50vh - 130px)` lo deja con su centro optico en
+          el centro de la ventana. Al abrirse un panel sube a 76 px, apenas
+          debajo de la sobre-linea, y le deja la pantalla al contenido.
+
+          `pointer-events-none`: el bloque no tiene nada interactivo, y abierto
+          su alto -que incluye los huecos reservados de la sobre-linea y de
+          INHALAR, invisibles pero presentes- pasa los 172 px donde empieza el
+          panel. Sin esto se comeria los clicks de EDITAR. */}
+      <div
+        className="cairn-shift pointer-events-none absolute top-0 right-0 left-0 flex flex-col items-center"
+        style={{
+          paddingTop: panelOpen ? 58 : "calc(50vh - 130px)",
+          transitionProperty: "padding-top",
+        }}
+      >
         <div
-          className="relative overflow-y-auto"
-          style={{ width: 720, maxWidth: "calc(100vw - 96px)", maxHeight: "calc(100vh - 220px)" }}
+          className="cairn-fade"
+          style={{
+            fontStyle: "italic",
+            fontSize: 19,
+            color: "var(--fg-52)",
+            opacity: panelOpen ? 0 : 1,
+            transitionProperty: "opacity",
+          }}
+        >
+          {overline}
+        </div>
+        <div
+          className="cairn-shift"
+          style={{
+            fontSize: panelOpen ? 60 : 196,
+            fontWeight: 300,
+            lineHeight: 0.92,
+            letterSpacing: "-.025em",
+            fontVariantNumeric: "tabular-nums",
+            // 24 y no los 6 del handoff: con `line-height: .92` la caja del
+            // cronometro queda mas corta que sus propios glifos, asi que a
+            // 196 px las cifras se suben y le pisan la sobre-linea italica.
+            marginTop: 24,
+            transitionProperty: "font-size",
+          }}
+        >
+          {clock}
+        </div>
+        {/* La marca de respiracion solo tiene sentido durante la pausa y con el
+            panel cerrado, pero el hueco se reserva siempre. */}
+        <div
+          className="cairn-fade flex items-center gap-3.5 font-mono"
+          style={{
+            marginTop: 20,
+            fontSize: 10,
+            letterSpacing: ".3em",
+            color: "var(--fg-34)",
+            opacity: isElapsed && !panelOpen ? 1 : 0,
+            transitionProperty: "opacity",
+          }}
+        >
+          <div
+            className="cairn-breathe rounded-full"
+            style={{ width: 5, height: 5, background: "var(--color-ac)" }}
+          />
+          <div>INHALAR · EXHALAR</div>
+        </div>
+      </div>
+
+      {/* La region de los paneles: 172 px abajo del borde y 142 arriba de la
+          fila de botones. Los dos paneles quedan MONTADOS y se muestran con
+          `display`, para que colapsar la rutina a mitad de una edicion no tire
+          el borrador. */}
+      <div
+        className="cairn-fade absolute right-0 left-0 flex justify-center"
+        style={{
+          top: 172,
+          bottom: 142,
+          opacity: panelOpen ? 1 : 0,
+          pointerEvents: panelOpen ? "auto" : "none",
+          transitionProperty: "opacity",
+        }}
+      >
+        <div
+          className="overflow-y-auto"
+          style={{
+            display: showSettings ? "block" : "none",
+            width: 720,
+            maxWidth: "calc(100vw - 96px)",
+          }}
         >
           <Section title="CICLO">
             <Row title="Duración del intervalo" hint="CUÁNTO DURA CADA CICLO">
@@ -363,12 +568,22 @@ export default function Foco() {
                   border: "1px solid var(--fg-18)",
                 }}
               />
-              <span className="font-mono" style={{ fontSize: 10, letterSpacing: ".2em", color: "var(--fg-38)" }}>
+              <span
+                className="font-mono"
+                style={{
+                  fontSize: 10,
+                  letterSpacing: ".2em",
+                  color: "var(--fg-38)",
+                }}
+              >
                 MIN
               </span>
             </Row>
             <div style={{ height: 1, background: "var(--fg-10)" }} />
-            <Row title="Posponer rápido" hint="LO QUE SUMA EL BOTÓN DE POSPONER">
+            <Row
+              title="Posponer rápido"
+              hint="LO QUE SUMA EL BOTÓN DE POSPONER"
+            >
               {CHIP_SNOOZES.map((minutes) => (
                 <Chip
                   key={minutes}
@@ -381,7 +596,10 @@ export default function Foco() {
           </Section>
 
           <Section title="SISTEMA">
-            <Row title="Iniciar con Windows" hint="LEE EL ESTADO REAL DEL REGISTRO, NO EL ARCHIVO">
+            <Row
+              title="Iniciar con Windows"
+              hint="LEE EL ESTADO REAL DEL REGISTRO, NO EL ARCHIVO"
+            >
               <Switch
                 label="Iniciar con Windows"
                 on={settings?.autostart ?? false}
@@ -392,68 +610,66 @@ export default function Foco() {
 
           <div
             className="font-mono"
-            style={{ fontSize: 10, letterSpacing: ".3em", color: "var(--fg-30)", marginTop: 40 }}
+            style={{
+              fontSize: 10,
+              letterSpacing: ".3em",
+              color: "var(--fg-30)",
+              marginTop: 40,
+            }}
           >
             LOS AJUSTES SE GUARDAN AL INSTANTE
           </div>
         </div>
-      ) : (
-        <div className="relative flex flex-col items-center">
-          <div style={{ fontStyle: "italic", fontSize: 19, color: "var(--fg-52)" }}>
-            {overline}
-          </div>
-          <div
-            style={{
-              fontSize: 196,
-              fontWeight: 300,
-              lineHeight: 0.92,
-              letterSpacing: "-.025em",
-              fontVariantNumeric: "tabular-nums",
-              marginTop: 6,
-            }}
-          >
-            {clock}
-          </div>
-          {/* La marca de respiracion solo tiene sentido durante la pausa, pero el
-              hueco se reserva siempre: la fila de botones NO se puede mover
-              (docs/DESIGN.md §4), y `LISTO` tiene que estar en el mismo pixel. */}
-          <div
-            className="flex items-center gap-3.5 font-mono"
-            style={{
-              marginTop: 20,
-              fontSize: 10,
-              letterSpacing: ".3em",
-              color: "var(--fg-34)",
-              visibility: isElapsed ? "visible" : "hidden",
-            }}
-          >
-            <div
-              className="cairn-breathe rounded-full"
-              style={{ width: 5, height: 5, background: "var(--color-ac)" }}
-            />
-            <div>INHALAR · EXHALAR</div>
-          </div>
-        </div>
-      )}
 
-      <div className="relative flex items-center gap-3" style={{ marginTop: 76 }}>
-        <Pill solid padding="12px 34px" onClick={() => void reset()}>
+        <Routine routine={routine} hidden={!showRoutine} />
+      </div>
+
+      {/* La fila de botones vive anclada al pie, igual abierta que cerrada.
+          Es la regla dura de docs/DESIGN.md §4: `LISTO` es la unica accion que
+          no puede reubicarse nunca. */}
+      <div
+        className="absolute right-0 left-0 flex items-center justify-center gap-3"
+        style={{ bottom: 88 }}
+      >
+        {/* LISTO cierra la pausa: reinicia el ciclo Y deja la rutina limpia
+            para la proxima. Son dos efectos y no uno solo porque el ciclo vive
+            en Rust y la rutina es un archivo; el orden importa poco, pero el
+            temporizador va primero porque es lo que el usuario esta mirando. */}
+        <Pill
+          solid
+          padding="12px 34px"
+          onClick={() => {
+            void reset();
+            routine.clearChecks();
+          }}
+        >
           LISTO
         </Pill>
         <Pill onClick={() => void snooze()}>posponer {snoozeMin}</Pill>
-        <Pill onClick={() => void (isPaused ? resume() : pause())} disabled={isElapsed}>
+        <Pill
+          onClick={() => void (isPaused ? resume() : pause())}
+          disabled={isElapsed}
+        >
           {isPaused ? "reanudar" : "pausar"}
         </Pill>
-        <Pill onClick={() => setShowSettings((open) => !open)}>
+        <Pill active={showRoutine} onClick={toggleRoutine}>
+          {showRoutine ? "ocultar rutina" : "ver rutina"}
+        </Pill>
+        <Pill onClick={toggleSettings}>
           {showSettings ? "volver" : "ajustes"}
         </Pill>
       </div>
 
       <div
         className="absolute right-0 left-0 text-center"
-        style={{ bottom: 52, fontStyle: "italic", fontSize: 14, color: "var(--fg-30)" }}
+        style={{
+          bottom: 52,
+          fontStyle: "italic",
+          fontSize: 14,
+          color: "var(--fg-30)",
+        }}
       >
-        el ciclo no vuelve a contar hasta que confirmás
+        {footerHint(showRoutine, routine.mode === "edit")}
       </div>
     </main>
   );

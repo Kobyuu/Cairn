@@ -1,4 +1,5 @@
 mod modes;
+mod routine;
 mod settings;
 mod timer;
 mod tray;
@@ -46,6 +47,8 @@ pub fn run() {
             timer::timer_set_quick_snooze,
             settings::settings_snapshot,
             settings::settings_set_autostart,
+            routine::routine_read,
+            routine::routine_write,
         ])
         .setup(|app| {
             let handle = app.handle().clone();

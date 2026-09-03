@@ -136,7 +136,24 @@ Escuadras de 9 px a 34 / 44 px de los bordes.
 Contenido: etiqueta de rutina (Mono 10 px, `.34em`, 38 %, entre dos hairlines de
 56 px), sobre-línea itálica de 19 px al 52 %, **cronómetro de 196 px**
 (Newsreader 300, `tabular-nums`, `mm:ss`), marca de respiración (punto de 5 px
-en acento + `INHALAR · EXHALAR`), fila de botones a 76 px, y pista al pie.
+en acento + `INHALAR · EXHALAR`), fila de botones y pista al pie.
+
+Entre la sobre-línea y el cronómetro van **24 px, no los 6 del handoff**: con
+`line-height: .92` la caja del cronómetro queda más corta que sus propios
+glifos, así que a 196 px las cifras se suben y le pisan la itálica.
+
+**La fila de botones va anclada al pie (`bottom: 88px`), abierta o cerrada**, y
+no colgando del cronómetro como la dibuja `Cairn Foco.dc.html`. Manda
+`Cairn Rutina.dc.html`, que es el único archivo del handoff que dibuja los dos
+estados: con la fila en el flujo, encoger el cronómetro al abrir la rutina la
+movería, y eso está prohibido más abajo.
+
+**El bloque del cronómetro, en cambio, va centrado con el panel cerrado**
+(`padding-top: calc(50vh - 130px)`, la mitad de su propio alto) y sube a 58 px
+al abrirse un panel. El `padding-top: 150px` que usa el prototipo de Rutina para
+el estado colapsado deja el cronómetro arriba y el halo en el centro: en el
+artboard corto del handoff no se nota, y en un monitor de verdad parte la
+pantalla en dos mitades que no se hablan.
 
 Botones: `LISTO` en pastilla sólida de acento; `posponer 5` + `▾` en pastilla
 partida con borde al 20 %; `ver rutina` en pastilla con borde.
@@ -144,7 +161,7 @@ partida con borde al 20 %; `ver rutina` en pastilla con borde.
 ### Rutina — `Cairn Rutina.dc.html`
 
 Panel dentro de Foco, **colapsado por defecto**. Transición de 450 ms
-`cubic-bezier(.4,0,.2,1)`: el cronómetro baja de 196 a 68 px y sube al
+`cubic-bezier(.4,0,.2,1)`: el cronómetro baja de 196 a 60 px y sube al
 encabezado, el halo va de `top:50%` a `22%`, `INHALAR · EXHALAR` se va en 300 ms.
 
 **La fila de botones no se mueve.** `LISTO` está en el mismo píxel abierto y
@@ -245,7 +262,7 @@ El trabajo está seguido en el issue [#3](https://github.com/Kobyuu/Cairn/issues
 | Tokens, tipografía, movimiento | **Hecho** en `src/index.css`                                  |
 | Foco                           | **Hecho** en `src/views/Foco.tsx`, ya a pantalla completa      |
 | Ajustes                        | **Parcial**: CICLO (intervalo y posponer rápido) y SISTEMA (autostart). Faltan MODOS, RUTINA y APARIENCIA |
-| Rutina                         | Etapa 5                                                       |
+| Rutina                         | **Hecho** en `src/views/Routine.tsx` (lectura renderizada y edición en `<textarea>`); falta la lámina de referencia, que es contenido del usuario |
 | Widget · Ambiente              | **Hecho** en `src/views/Widget.tsx` y `src/views/Ambient.tsx` (ver abajo lo omitido) |
 | Fuentes empaquetadas           | **Hecho** — Newsreader Variable (eje `opsz`) + IBM Plex Mono 400 |
 | Landing                        | Issue #3                                                      |
