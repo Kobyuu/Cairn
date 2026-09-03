@@ -1,18 +1,38 @@
 # Pila del COMPILADOR, no de Cairn.
 #
-# Los crates que entran con los plugins de la etapa 3 -`windows` (medio WinRT,
-# via el plugin de notificaciones), `tauri-utils`, `muda`- son lo bastante
-# grandes como para que rustc 1.98 desborde su propia pila al analizarlos en
-# Windows y muera con STATUS_STACK_BUFFER_OVERRUN (0xc0000409).
+# Los crates grandes del arbol -`windows` (medio WinRT, que entra por `tao`,
+# `muda` y el icono de bandeja), `tauri-utils`, `muda`- son lo bastante grandes
+# como para que rustc 1.98 desborde su propia pila al analizarlos en Windows y
+# muera con STATUS_STACK_BUFFER_OVERRUN (0xc0000409).
 #
 # El sintoma enganya: cuando rustc muere a mitad de escribir un `.rmeta`, el
-# crate que depende de ese metadato falla despues con errores de resolucion que
-# no tienen nada que ver ("cannot determine resolution for the macro
-# `::core::concat`", "import resolution is stuck"). Perseguir esos errores es
+# crate que depende de ese metadato falla despues con errores que no tienen nada
+# que ver ("cannot determine resolution for the macro `::core::concat`",
+# "import resolution is stuck", "can't find crate for `url`", y a veces un
+# E0460 "found possibly newer version of crate"). Perseguir esos errores es
 # perseguir la cascada; la causa es siempre el ICE de mas arriba.
 #
-# Va en el repo y no como variable de entorno suelta para que `pnpm tauri dev`
-# ande en cualquier terminal sin que nadie tenga que acordarse de exportarla.
+# ## Por que este archivo esta en `src-tauri/` y NO en la raiz
+#
+# Porque cargo busca `.cargo/config.toml` en los ancestros del **directorio
+# actual**, no en el del manifiesto, y esa asimetria es deliberada:
+#
+# - `pnpm tauri dev` / `tauri build` corren con el cwd adentro de `src-tauri`,
+#   asi que **si** leen esto. Son los que compilan el arbol entero, `windows`
+#   incluido, y los que necesitan la pila grande.
+# - `cargo test` / `cargo clippy --manifest-path src-tauri/Cargo.toml` desde la
+#   raiz (CLAUDE.md §10.1) **no** la leen, y esta bien que no: solo recompilan
+#   `cairn`, que entra sobrado en la pila por defecto.
+#
+# Se probo moverlo a la raiz en la etapa 6 y **rompe**: con 256 MB aplicados a
+# `cargo test`, rustc RESERVA esa pila por hilo y con la cantidad de jobs por
+# defecto la reserva misma falla -reportada con el mismo 0xc0000409, que es lo
+# que hace perder el rastro-. El numero tiene techo por arriba, no solo piso.
+#
+# El precio de la asimetria: `cargo build --manifest-path ...` desde la raiz NO
+# puede recompilar `windows` de cero (solo pasa si algo cambia su set de
+# features, como sacar un plugin). Cuando haga falta, la receta medida es
+# `RUST_MIN_STACK=268435456 cargo build --manifest-path src-tauri/Cargo.toml -j 2`.
 [env]
 # 256 MB. Medido, no elegido a ojo: con 64 MB `windows` seguia desbordando.
 RUST_MIN_STACK = "268435456"

@@ -2,10 +2,17 @@
 //!
 //! La idea que ordena el archivo: **el modo elegido y la ventana visible son
 //! dos cosas distintas**. `Mode` es lo que eligio el usuario y lo que se guarda
-//! en `store.json`; la ventana que se ve se DERIVA de el y de la fase del
-//! temporizador, con una sola regla: vencido siempre muestra Foco. Asi "al
-//! vencer aparece Foco, al confirmar vuelve a Ambiente" no necesita recordar
-//! nada extra, y un vencimiento no puede pisar la preferencia guardada.
+//! en `store.json`; la ventana que se ve se DERIVA de el, de la fase del
+//! temporizador y de un solo bit mas: vencido muestra Foco, salvo que el
+//! usuario ya la haya apartado. Asi "al vencer aparece Foco, al confirmar
+//! vuelve a Ambiente" no necesita recordar nada extra, y un vencimiento no
+//! puede pisar la preferencia guardada.
+//!
+//! Y hay dos formas de cambiar el modo, que **no** son la misma:
+//! `set_mode` es la eleccion deliberada y baja a `store.json`; `show_mode`
+//! trae una ventana por esta vez y no toca el archivo. Confundirlas es como se
+//! llego al bug de que abrir Ajustes desde la bandeja te reescribia el modo
+//! por defecto en "foco".
 //!
 //! Las tres ventanas se crean al arrancar y **nunca se recrean**: conmutar es
 //! `show()` de una y `hide()` de las otras dos. La razon es D4: `transparent`
@@ -36,7 +43,8 @@
 
 use std::sync::Mutex;
 
-use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, WebviewWindow};
+use serde::Serialize;
+use tauri::{AppHandle, Manager, Monitor, PhysicalPosition, PhysicalSize, WebviewWindow};
 
 use crate::settings::{self, Settings, WidgetPos};
 use crate::timer::Phase;
@@ -116,11 +124,21 @@ pub fn ambient_rect(
 /// Recibe la fase **por valor** y devuelve un `Mode`: no hay forma de que esta
 /// funcion -ni ninguna otra de este archivo- toque el temporizador. Es la regla
 /// inquebrantable de CLAUDE.md §2 expresada en la firma, no en un comentario.
-pub fn visible_mode(mode: Mode, phase: Phase) -> Mode {
+///
+/// `dismissed` es "el usuario ya aparto esta pantalla de vencimiento":
+/// minimizo Foco, o abrio la carpeta de notas y necesita ver el Explorador.
+/// Sin el, apartar Foco con el ciclo vencido es imposible -este calculo
+/// devuelve `Focus` y la ventana vuelve sola-, que es justo lo que pasaba.
+///
+/// **No confirma el ciclo.** La fase sigue en `Elapsed` y solo LISTO la mueve
+/// (CLAUDE.md §2); la barra de Ambiente se queda al 100 % esperando. Lo unico
+/// que cambia es que la ventana deja de estar encima.
+pub fn visible_mode(mode: Mode, phase: Phase, dismissed: bool) -> Mode {
     match phase {
         // Vencido interrumpe: es el unico momento en que la app tiene derecho a
-        // taparte la pantalla, y para eso existe.
-        Phase::Elapsed { .. } => Mode::Focus,
+        // taparte la pantalla, y para eso existe. Pero una vez que el usuario
+        // la aparto a mano, insistir es pelearle al mouse.
+        Phase::Elapsed { .. } if !dismissed => Mode::Focus,
         _ => mode,
     }
 }
@@ -129,6 +147,15 @@ pub fn visible_mode(mode: Mode, phase: Phase) -> Mode {
 struct ModeState {
     /// El modo que eligio el usuario, no el que se ve.
     mode: Mode,
+    /// En que monitor van Foco y Ambiente; `None` = el primario. Se guarda
+    /// aca ademas de en `store.json` porque `align` lo necesita en el chequeo
+    /// de 1 Hz, y leer el store una vez por segundo para un valor que cambia
+    /// una vez al mes es trabajo al vacio.
+    monitor: Option<String>,
+    /// El usuario aparto la pantalla de vencimiento sin confirmar el ciclo.
+    /// Caduca sola: `sync` lo vuelve a `false` en cuanto la fase deja de estar
+    /// vencida, asi que la pausa siguiente vuelve a interrumpir.
+    dismissed: bool,
     /// Ultima posicion conocida del widget, en fisicos. Se actualiza en cada
     /// evento `Moved` y se baja a disco recien al esconderlo o al salir: un
     /// arrastre dispara decenas de `Moved` por segundo y cada uno seria una
@@ -156,6 +183,8 @@ pub fn init(app: &AppHandle, settings: &Settings, phase: Phase) -> Mode {
 
     app.manage(Mutex::new(ModeState {
         mode,
+        monitor: settings.monitor.clone(),
+        dismissed: false,
         widget_pos: settings.widget_pos,
         applied: None,
         visible: None,
@@ -171,30 +200,94 @@ pub fn init(app: &AppHandle, settings: &Settings, phase: Phase) -> Mode {
     }
 
     place_widget(app);
-    let target = visible_mode(mode, phase);
+    let target = visible_mode(mode, phase, false);
     align(app, target);
     apply(app, target);
     mode
 }
 
-/// El modo elegido. `None` solo si `init` todavia no corrio.
-pub fn current(app: &AppHandle) -> Option<Mode> {
+/// El modo elegido y si el usuario ya aparto la pantalla de vencimiento.
+///
+/// Los dos juntos, porque los dos hacen falta para saber que ventana mostrar y
+/// tomar el candado una vez es mejor que tomarlo dos. `None` solo si `init`
+/// todavia no corrio.
+fn chosen(app: &AppHandle) -> Option<(Mode, bool)> {
     let state = app.try_state::<Mutex<ModeState>>()?;
     let guard = state.lock().ok()?;
-    Some(guard.mode)
+    Some((guard.mode, guard.dismissed))
 }
 
-/// Cambia de modo. Es la entrada desde la bandeja, o sea el hilo principal.
+/// **El modo por defecto cambia: es una preferencia, y se guarda.**
+///
+/// Esta es la eleccion deliberada -el submenu de modos de la bandeja, las
+/// tarjetas de MODOS en Ajustes, el boton `MODO` del widget-. Para "traeme esta
+/// ventana ahora" sin tocar la preferencia esta `show_mode`.
 ///
 /// **No toca el temporizador.** La fase se lee para saber que ventana mostrar y
 /// se devuelve tal cual: cambiar de modo no reinicia, no pausa y no adelanta
 /// nada (CLAUDE.md §2).
 pub fn set_mode(app: &AppHandle, mode: Mode) {
+    change(app, mode, true);
+}
+
+/// Trae una ventana a la pantalla **sin** tocar el modo por defecto guardado.
+///
+/// Existe por un bug concreto: "Ajustes" en la bandeja es "traeme Foco", y
+/// cuando eso pasaba por `set_mode` escribia `default_mode = "foco"`. O sea que
+/// elegir Widget como modo por defecto y despues abrir Ajustes te dejaba el
+/// archivo diciendo Foco, y la app arrancaba en Foco para siempre. Lo mismo
+/// hacia volver a ejecutar el `.exe`.
+///
+/// El modo EN MEMORIA si cambia -si no, el proximo anuncio del temporizador te
+/// escondería la ventana que acabas de pedir-, y por eso la marca del menu y la
+/// tarjeta de Ajustes pueden quedar mostrando el modo guardado mientras ves
+/// otro. Es a proposito: las dos dicen "tu modo por defecto", que es lo que el
+/// campo significa, y al reiniciar la app vuelve ahi.
+pub fn show_mode(app: &AppHandle, mode: Mode) {
+    change(app, mode, false);
+}
+
+/// El usuario aparto la pantalla de vencimiento: minimizo Foco, o abrio la
+/// carpeta de notas y necesita ver el Explorador que quedo debajo.
+///
+/// **No confirma el ciclo** -eso solo lo hace LISTO (CLAUDE.md §2)- y **no
+/// guarda el modo**: minimizar una ventana no es elegir una preferencia. Lo
+/// unico que hace es marcar el descarte y bajar al modo mas discreto.
+///
+/// El orden importa: el descarte se marca ANTES de calcular la ventana
+/// objetivo, porque es justo lo que hace que el calculo no devuelva `Focus` y
+/// la ventana no vuelva sola.
+///
+/// **Descartar dos veces no hace nada**, y esa guarda es la que corta una
+/// re-entrada posible: apartar Foco termina en un `hide()` de esa misma
+/// ventana, y un `hide()` puede volver a disparar el evento que nos trajo aca.
+/// Sin el corte, cada vuelta olvida la cache de `apply` y vuelve a esconder.
+/// El flag lo limpia `change` en cuanto alguien vuelve a pedir Foco, asi que
+/// minimizar → traerla → minimizar sigue funcionando.
+pub fn dismiss_focus(app: &AppHandle) {
+    let already = {
+        let Some(state) = app.try_state::<Mutex<ModeState>>() else { return };
+        let Ok(mut guard) = state.lock() else {
+            eprintln!("[cairn] {POISONED}");
+            return;
+        };
+        let already = guard.dismissed;
+        guard.dismissed = true;
+        already
+    };
+    if already {
+        return;
+    }
+    change(app, Mode::Ambient, false);
+}
+
+/// El cuerpo compartido. `remember` decide si el cambio baja a `store.json`.
+fn change(app: &AppHandle, mode: Mode, remember: bool) {
     // Primero la fase, y con el candado del temporizador ya soltado, para no
     // cruzar el orden de candados que documenta la cabecera del archivo.
     let phase = crate::timer::current_phase(app);
 
-    let changed = {
+    let (changed, dismissed) = {
         let Some(state) = app.try_state::<Mutex<ModeState>>() else {
             eprintln!("[cairn] los modos todavia no estan registrados");
             return;
@@ -203,9 +296,16 @@ pub fn set_mode(app: &AppHandle, mode: Mode) {
             eprintln!("[cairn] {POISONED}");
             return;
         };
+        // Pedir Foco es, literalmente, dejar de tenerla apartada: sin esto,
+        // minimizar → traerla de la bandeja → minimizar de nuevo no haria nada
+        // la segunda vez. Solo cuando el destino es Foco: limpiar el descarte
+        // al elegir Ambiente haria reaparecer la pantalla que se aparto.
+        if mode == Mode::Focus {
+            guard.dismissed = false;
+        }
         let changed = guard.mode != mode;
         guard.mode = mode;
-        changed
+        (changed, guard.dismissed)
     };
 
     // Se sigue de largo aunque el modo ya fuera ese, y a proposito: pedir el
@@ -213,15 +313,23 @@ pub fn set_mode(app: &AppHandle, mode: Mode) {
     // cerro con la X (que la esconde, no la cierra). Lo que se saltea es la
     // escritura a disco y el repintado del menu, que no tienen nada que hacer.
     if changed {
-        // El modo elegido a mano SI se persiste: es la preferencia con la que
-        // la app tiene que volver a arrancar. El Foco que aparece al vencer no
-        // pasa por aca, justamente para que no la pise.
-        settings::update(app, |settings| settings.default_mode = mode.label().to_string());
+        // La marca del menu de la bandeja se mueve SIEMPRE, guarde o no: dice
+        // "esto es lo que estas viendo", y dejarla en Foco despues de minimizar
+        // a Ambiente es una mentira que se ve de un vistazo. La tarjeta de
+        // MODOS en Ajustes es la que dice "modo por defecto" y esa sigue al
+        // archivo, asi que las dos pueden discrepar y cada una es cierta.
         crate::tray::sync_mode(app, mode);
+    }
+    if changed && remember {
+        settings::update(app, |settings| settings.default_mode = mode.label().to_string());
+        // Tambien a las ventanas: la seccion MODOS de Ajustes puede estar
+        // abierta, y sin esto la tarjeta marcada se quedaria en el modo viejo
+        // al cambiarlo desde la bandeja.
+        settings::broadcast(app);
     }
 
     let Some(phase) = phase else { return };
-    let target = visible_mode(mode, phase);
+    let target = visible_mode(mode, phase, dismissed);
     align(app, target);
     // Un pedido explicito del usuario siempre se re-aplica, aunque la cache
     // diga que esa ventana ya se estaba mostrando. Es lo que hace que "Ajustes"
@@ -229,6 +337,21 @@ pub fn set_mode(app: &AppHandle, mode: Mode) {
     // se cerro con la X, que la esconde en vez de cerrarla (D8).
     forget_visible(app);
     apply(app, target);
+}
+
+/// Cambia el modo desde la ventana de Ajustes (seccion MODOS del handoff).
+///
+/// Es el mismo `set_mode` de la bandeja, con la validacion del string que llega
+/// por IPC: una eleccion deliberada, asi que se guarda. Y conmuta de verdad, no
+/// solo escribe el archivo: persistir sin conmutar dejaria la bandeja marcando
+/// un modo y el archivo diciendo otro.
+#[tauri::command]
+pub fn modes_set(app: AppHandle, mode: String) -> Result<(), String> {
+    let Some(mode) = Mode::from_label(&mode) else {
+        return Err(format!("modo desconocido: {mode}"));
+    };
+    set_mode(&app, mode);
+    Ok(())
 }
 
 /// Olvida cual era la ventana visible, para que el proximo `apply` la muestre
@@ -242,8 +365,23 @@ fn forget_visible(app: &AppHandle) {
 /// Reacciona a un cambio de fase. La llama `timer::announce`, **con el candado
 /// del temporizador tomado**, asi que aca adentro solo puede haber setters.
 pub fn sync(app: &AppHandle, phase: Phase) {
-    let Some(mode) = current(app) else { return };
-    apply(app, visible_mode(mode, phase));
+    let Some((mode, dismissed)) = chosen(app) else { return };
+    // El descarte caduca al salir de vencido: confirmar con LISTO -o posponer-
+    // devuelve a Cairn el derecho de taparte la pantalla la proxima vez. Sin
+    // esta linea, apartar Foco una vez la apagaria para siempre.
+    let dismissed = dismissed && matches!(phase, Phase::Elapsed { .. });
+    if !dismissed {
+        forget_dismissal(app);
+    }
+    apply(app, visible_mode(mode, phase, dismissed));
+}
+
+/// Borra el descarte. Solo setters, para poder llamarla desde `sync`, que corre
+/// con el candado del temporizador tomado.
+fn forget_dismissal(app: &AppHandle) {
+    let Some(state) = app.try_state::<Mutex<ModeState>>() else { return };
+    let Ok(mut guard) = state.lock() else { return };
+    guard.dismissed = false;
 }
 
 /// Muestra la ventana que toca y esconde las otras dos.
@@ -286,7 +424,7 @@ fn apply(app: &AppHandle, target: Mode) {
 
 /// Recalcula y aplica la geometria de la ventana visible.
 ///
-/// **Nunca con un candado tomado**: usa `primary_monitor()`, que espera al hilo
+/// **Nunca con un candado tomado**: pregunta por los monitores, que espera al hilo
 /// principal. Solo la llaman `init` y `set_mode` (que corren en el hilo
 /// principal) y el chequeo de 1 Hz del ticker (que no tiene nada tomado).
 ///
@@ -297,16 +435,19 @@ fn align(app: &AppHandle, target: Mode) {
         return;
     }
     let Some(window) = window(app, target) else { return };
-    let monitor = match window.primary_monitor() {
-        Ok(Some(monitor)) => monitor,
-        Ok(None) => {
-            eprintln!("[cairn] Windows no reporta un monitor primario");
-            return;
-        }
-        Err(error) => {
-            eprintln!("[cairn] no se pudo leer el monitor primario: {error}");
-            return;
-        }
+
+    // El nombre se saca del candado y se SUELTA antes de preguntarle a Windows:
+    // los getters de monitor esperan al hilo principal, y esperar con el
+    // candado tomado es la mitad de un abrazo mortal (ver la cabecera).
+    let wanted = {
+        let Some(state) = app.try_state::<Mutex<ModeState>>() else { return };
+        let Ok(guard) = state.lock() else { return };
+        guard.monitor.clone()
+    };
+
+    let Some(monitor) = pick_monitor(&window, wanted.as_deref()) else {
+        eprintln!("[cairn] Windows no reporta ningun monitor usable");
+        return;
     };
 
     let pos = (monitor.position().x, monitor.position().y);
@@ -333,6 +474,115 @@ fn align(app: &AppHandle, target: Mode) {
     log_step("set_size", window.set_size(PhysicalSize::new(width, height)));
 }
 
+/// El monitor elegido, o el primario si no hay eleccion o si el elegido ya no
+/// esta enchufado.
+///
+/// El fallback no es cortesia: desenchufar la pantalla elegida dejaria a Foco
+/// posicionada en coordenadas que ya no existen -o sea invisible, sin forma de
+/// recuperarla salvo editando `store.json`-. La eleccion NO se borra, asi que
+/// volver a enchufar la restaura sola.
+fn pick_monitor(window: &WebviewWindow, wanted: Option<&str>) -> Option<Monitor> {
+    if let Some(name) = wanted {
+        match window.available_monitors() {
+            Ok(monitors) => {
+                let found = monitors
+                    .into_iter()
+                    .find(|monitor| monitor.name().map(String::as_str) == Some(name));
+                if let Some(monitor) = found {
+                    return Some(monitor);
+                }
+                eprintln!("[cairn] el monitor elegido ({name}) no esta; uso el primario");
+            }
+            Err(error) => eprintln!("[cairn] no se pudo listar los monitores: {error}"),
+        }
+    }
+    match window.primary_monitor() {
+        Ok(monitor) => monitor,
+        Err(error) => {
+            eprintln!("[cairn] no se pudo leer el monitor primario: {error}");
+            None
+        }
+    }
+}
+
+/// Un monitor, como lo ve la seccion MODOS de Ajustes.
+///
+/// `name` es el identificador de Windows y lo que se guarda; el resto es para
+/// que el usuario pueda distinguir una pantalla de otra sin adivinar.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MonitorInfo {
+    pub name: String,
+    pub width: u32,
+    pub height: u32,
+    pub primary: bool,
+}
+
+/// Las pantallas conectadas, en el orden en que las reporta Windows.
+///
+/// Las que no tienen nombre se descartan: sin nombre no hay forma de guardar la
+/// eleccion, asi que ofrecerlas seria ofrecer un boton que no persiste.
+#[tauri::command]
+pub fn modes_monitors(app: AppHandle) -> Vec<MonitorInfo> {
+    let primary = app
+        .primary_monitor()
+        .ok()
+        .flatten()
+        .and_then(|monitor| monitor.name().cloned());
+
+    let Ok(monitors) = app.available_monitors() else {
+        eprintln!("[cairn] no se pudo listar los monitores");
+        return Vec::new();
+    };
+
+    monitors
+        .iter()
+        .filter_map(|monitor| {
+            let name = monitor.name()?.clone();
+            Some(MonitorInfo {
+                primary: primary.as_deref() == Some(name.as_str()),
+                name,
+                width: monitor.size().width,
+                height: monitor.size().height,
+            })
+        })
+        .collect()
+}
+
+/// Elige en que monitor aparecen Foco y Ambiente.
+///
+/// `None` vuelve al primario. Un nombre que no esta en la lista se rechaza en
+/// vez de escribirse: el valor entra por IPC, y aunque `pick_monitor` ya cae al
+/// primario, un `store.json` con una pantalla inventada es una mentira que
+/// alguien va a leer despues.
+#[tauri::command]
+pub fn modes_set_monitor(app: AppHandle, name: Option<String>) -> Result<(), String> {
+    if let Some(wanted) = &name {
+        let known = modes_monitors(app.clone())
+            .into_iter()
+            .any(|monitor| &monitor.name == wanted);
+        if !known {
+            return Err(format!("no hay ningun monitor llamado {wanted}"));
+        }
+    }
+
+    {
+        let Some(state) = app.try_state::<Mutex<ModeState>>() else {
+            return Err("los modos todavia no estan registrados".into());
+        };
+        let Ok(mut guard) = state.lock() else {
+            return Err(POISONED.into());
+        };
+        guard.monitor = name.clone();
+    }
+    settings::update(&app, |settings| settings.monitor = name);
+    settings::broadcast(&app);
+    // Reubicar YA. El chequeo de 1 Hz lo haria solo, pero un segundo de espera
+    // despues de un click se siente como que el boton no hizo nada.
+    keep_aligned(&app);
+    Ok(())
+}
+
 /// El chequeo de 1 Hz que engancha el ticker.
 ///
 /// Tauri no expone un evento de "cambio la configuracion de pantallas", asi que
@@ -341,10 +591,11 @@ fn align(app: &AppHandle, target: Mode) {
 /// llamada por segundo y solo mientras se ve Foco o Ambiente; la cache de
 /// `align` hace que no se reposicione nada si nada cambio.
 pub fn keep_aligned(app: &AppHandle) {
-    let (Some(mode), Some(phase)) = (current(app), crate::timer::current_phase(app)) else {
+    let (Some((mode, dismissed)), Some(phase)) = (chosen(app), crate::timer::current_phase(app))
+    else {
         return;
     };
-    align(app, visible_mode(mode, phase));
+    align(app, visible_mode(mode, phase, dismissed));
 }
 
 /// Anota que el usuario movio el widget. Solo memoria: el disco espera.
@@ -487,7 +738,7 @@ mod tests {
         for phase in phases {
             for mode in Mode::ALL {
                 let before = phase;
-                let _ = visible_mode(mode, phase);
+                let _ = visible_mode(mode, phase, false);
                 assert_eq!(before, phase, "cambiar de modo no puede tocar la fase");
             }
         }
@@ -500,18 +751,47 @@ mod tests {
 
         // Vencido interrumpe desde cualquier modo...
         for mode in Mode::ALL {
-            assert_eq!(visible_mode(mode, elapsed), Mode::Focus);
+            assert_eq!(visible_mode(mode, elapsed, false), Mode::Focus);
         }
         // ...y al confirmar se vuelve al modo elegido, que nunca se piso.
-        assert_eq!(visible_mode(Mode::Ambient, running), Mode::Ambient);
-        assert_eq!(visible_mode(Mode::Widget, running), Mode::Widget);
+        assert_eq!(visible_mode(Mode::Ambient, running, false), Mode::Ambient);
+        assert_eq!(visible_mode(Mode::Widget, running, false), Mode::Widget);
+    }
+
+    #[test]
+    fn a_dismissed_focus_stops_coming_back() {
+        // El bug que arregla el descarte: minimizar Foco con el ciclo vencido
+        // recalculaba el objetivo, le salia `Focus`, y la ventana volvia sola.
+        // Se probaba como "Win + flecha abajo no hace nada".
+        let elapsed = Phase::Elapsed { since_ms: 0 };
+
+        assert_eq!(visible_mode(Mode::Ambient, elapsed, false), Mode::Focus);
+        assert_eq!(visible_mode(Mode::Ambient, elapsed, true), Mode::Ambient);
+        // El descarte NO es una preferencia de modo: si el usuario eligio
+        // Widget, apartar Foco lo lleva al modo que eligio, no a otro.
+        assert_eq!(visible_mode(Mode::Widget, elapsed, true), Mode::Widget);
+    }
+
+    #[test]
+    fn the_dismissal_does_not_leak_into_the_next_cycle() {
+        // Un descarte vale para ESTE vencimiento. Con la fase ya movida -LISTO,
+        // posponer- el flag no tiene nada que decir, y `sync` lo borra: la
+        // pausa siguiente vuelve a taparte la pantalla.
+        let running = Phase::Running { deadline_ms: 1_000, cycle_ms: 1_000 };
+        let elapsed = Phase::Elapsed { since_ms: 0 };
+
+        // Corriendo, el descarte es irrelevante en las dos posiciones.
+        assert_eq!(visible_mode(Mode::Focus, running, true), Mode::Focus);
+        assert_eq!(visible_mode(Mode::Focus, running, false), Mode::Focus);
+        // Y con el flag ya limpio, el vencimiento siguiente interrumpe igual.
+        assert_eq!(visible_mode(Mode::Ambient, elapsed, false), Mode::Focus);
     }
 
     #[test]
     fn paused_stays_in_the_chosen_mode() {
         // Pausar no es vencer: no tiene por que taparle la pantalla a nadie.
         let paused = Phase::Paused { remaining_ms: 60_000, cycle_ms: 60_000 };
-        assert_eq!(visible_mode(Mode::Ambient, paused), Mode::Ambient);
+        assert_eq!(visible_mode(Mode::Ambient, paused, false), Mode::Ambient);
     }
 
     #[test]

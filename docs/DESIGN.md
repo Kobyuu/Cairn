@@ -55,6 +55,13 @@ quedan como registro y **no se implementan**.
 **no** por el tema de la app: `oklch(0.82 0.06 150)` sobre oscuro,
 `oklch(0.42 0.05 150)` sobre claro.
 
+> **Lo implementado es una aproximación, y es a propósito.** La ventana de
+> Ambiente es transparente y no hay forma de leer qué hay detrás, así que la
+> tinta sigue al **tema de la app**. Con el tema en Sistema eso es literalmente
+> el tema de Windows, que es lo más cerca que estamos del fondo del escritorio.
+> La consecuencia visible: tema claro sobre un fondo oscuro deja la franja casi
+> invisible, y se arregla cambiando el tema.
+
 Los grises **no son tokens nuevos**: son `color-mix(in oklab, var(--color-fg) N%, transparent)`.
 Los porcentajes que usa el handoff, ya expuestos como variables en `index.css`:
 
@@ -66,6 +73,11 @@ Los porcentajes que usa el handoff, ya expuestos como variables en `index.css`:
 
 El acento se mueve **en luminosidad, nunca en tono**: `hover oklch(0.82 0.055 150)`,
 `activo oklch(0.70 0.05 150)`, `tenue … / .35`.
+
+Cuando el acento hace de **superficie** y no de tinta, se mezcla igual que los
+grises: 12 % (tarjeta de modo elegida), 22 % (pista del interruptor encendido),
+55 / 70 / 90 % (arco de Foco y hairline del Widget). Están en `index.css` como
+`--ac-12 … --ac-90`.
 
 ### Tipografía
 
@@ -195,6 +207,10 @@ Columna de 720 px centrada, `max-width: calc(100vw - 96px)`, padding 64 arriba.
 Secciones CICLO · MODOS · RUTINA · APARIENCIA · SISTEMA, con títulos en Mono
 10 px `.3em` al 38 % y 48 px de aire arriba.
 
+MODOS lleva dos filas y no una: las tres tarjetas del **modo por defecto** que
+dibuja el handoff, y una fila **Pantalla** que el handoff no tiene —hecha con
+los mismos chips que CICLO— porque el handoff asume un solo monitor. Ver §7.
+
 Cada fila: título Newsreader 300 a 23 px + descripción Mono 11 px al 42 %, con el
 control a la derecha. Chips `padding:9px 15px`, **sin radio**, borde al 18 %;
 activo con fondo de acento y texto en color de fondo. Interruptores de 52 × 26 px.
@@ -261,7 +277,7 @@ El trabajo está seguido en el issue [#3](https://github.com/Kobyuu/Cairn/issues
 | ------------------------------ | ------------------------------------------------------------- |
 | Tokens, tipografía, movimiento | **Hecho** en `src/index.css`                                  |
 | Foco                           | **Hecho** en `src/views/Foco.tsx`, ya a pantalla completa      |
-| Ajustes                        | **Parcial**: CICLO (intervalo y posponer rápido) y SISTEMA (autostart). Faltan MODOS, RUTINA y APARIENCIA |
+| Ajustes                        | **Hecho** — las cinco secciones: CICLO · MODOS · RUTINA · APARIENCIA · SISTEMA |
 | Rutina                         | **Hecho** en `src/views/Routine.tsx` (lectura renderizada y edición en `<textarea>`); falta la lámina de referencia, que es contenido del usuario |
 | Widget · Ambiente              | **Hecho** en `src/views/Widget.tsx` y `src/views/Ambient.tsx` (ver abajo lo omitido) |
 | Fuentes empaquetadas           | **Hecho** — Newsreader Variable (eje `opsz`) + IBM Plex Mono 400 |
@@ -282,17 +298,105 @@ la fila de botones, con el encuadre idéntico.
   propio tinte y pelea con la paleta. Queda para la etapa 6 si hace falta.
 - **La sombra larga (`box-shadow`).** Es un color hardcodeado (CLAUDE.md §5) y
   sobre una ventana transparente se ve como un halo cuadrado, no como sombra.
-- **Los botones de pausa y modo del estado hover, y el estado de arrastre**
-  (escala .96, rotación -.6°, borde punteado). La bandeja ya tiene pausa y los
-  tres modos; el arrastre lo dibuja Windows. Es decoración de la etapa 6.
+- **El estado de arrastre** (escala .96, rotación -.6°, borde punteado). El
+  webview **no recibe eventos de mouse mientras dura el arrastre**: lo maneja
+  Windows desde que `data-tauri-drag-region` dispara el `WM_NCLBUTTONDOWN`, así
+  que no hay un `mouseup` al que colgar el final del estado. Dibujarlo dejaría
+  el widget torcido hasta el próximo `mouseenter`.
 
-**Lo que NO se implementó todavía y hay que saber:** el selector de tema (los
-tokens de `[data-theme="light"]` ya existen y `store.json` ya guarda `theme`,
-falta el control y el comando que lo escriba), el menú `▾` de posponer arbitrario
-en la pastilla partida, el `pauseCountToday`, y el sonido al avisar.
+**Los botones de pausa y `MODO` del hover SÍ entraron** en la etapa 6: son
+función, no decoración, y son la única forma de pausar sin ir a la bandeja. Al
+pasar el mouse reemplazan a `MIN / RESTANTES` —en 176 px no entran los dos— y
+`MODO` rota los tres modos en el orden Ambiente → Widget → Foco.
+
+**Y con el ciclo vencido, el widget muestra `LISTO` en lugar de pausar.** Ese
+estado no existía cuando el handoff dibujó el widget, porque entonces al vencer
+Foco tapaba la pantalla y no había forma de estar mirando el widget. Ahora que
+Foco se puede apartar, sí la hay: la cifra cuenta **hacia arriba** (`N MIN DE
+PAUSA`, en vez de un `0 MIN RESTANTES` que sería falso) y el control del hover
+pasa a ser `LISTO` en sólido de acento, porque es la única acción que cierra el
+ciclo. Confirma igual que el `LISTO` de Foco: reinicia y deja la rutina limpia
+(la regla vive en `clearRoutineChecks`, escrita una sola vez).
+
+**No hay notificación del sistema, y es una decisión.** La etapa 3 levantaba un
+toast de Windows al vencer, con `tauri-plugin-notification`. Salió en la etapa 6
+por dos razones que se suman: aparece en el **mismo instante** en que Foco tapa
+el monitor entero, así que es un aviso encima del aviso; y sin instalador que
+registre el `AppUserModelID` de la app (CLAUDE.md §4: todavía no hay), Windows
+lo emite con la identidad de PowerShell. El aviso de Cairn **es** la pantalla de
+Foco, más el tono de `sound.ts` si está encendido. Un toast propio sólo tendría
+sentido como *alternativa* a que Foco tome la pantalla —"avisar sin taparte"—, y
+eso es una decisión de producto, no un cambio de piel.
+
+**Lo que cerró la etapa 6:** el selector de tema (tres chips, el comando
+`settings_set_theme` y la aplicación a las tres ventanas por el evento
+`settings-changed`), las secciones MODOS / RUTINA / APARIENCIA de Ajustes, el
+menú `▾` de posponer arbitrario, el sonido al avisar, la etiqueta de rutina en
+la sobre-línea de Foco y los controles del Widget al pasar el mouse.
+
+**Lo que se decidió NO implementar, con su razón:**
+
+- **`pauseCountToday`.** El §State Management del handoff lo lista, pero existía
+  para la **cifra de contorno de la dirección Gráfica** — el número gigante de
+  pausas del día detrás del dial. Gráfica se descartó y ninguna pantalla de
+  Aliento lo muestra: sería un contador que nadie pinta, con un bug de
+  medianoche incluido.
+- **`RESTABLECER TODO`** al pie de Ajustes. Restablecer de verdad implica
+  reescribir el intervalo del ciclo en curso y conmutar de modo: tres efectos
+  encadenados para un botón que nadie pidió y que ya tiene equivalente —
+  `store.json` es un archivo que se abre con el Bloc de Notas y se borra
+  (CLAUDE.md §3), y la app arranca con defaults sin un solo error.
+- **El encabezado de Ajustes** (mojón de la marca + `Ajustes` a 44 px +
+  versión). Ajustes no es una ventana propia: es un panel dentro de Foco, y la
+  sobre-línea ya dice `AJUSTES` en el mismo lugar donde el handoff pone el
+  título. Dos títulos serían el mismo dato dos veces.
+
+**El primer cuadro siempre se pinta oscuro.** El tema guardado llega por IPC un
+instante después de montar, así que con el tema claro elegido hay un parpadeo de
+un cuadro al arrancar. Es el precio de no bloquear el render esperando al disco;
+si molesta, el camino es que Rust inyecte el atributo al crear la ventana.
 
 **Foco ya es pantalla completa.** Desde la etapa 4 la ventana se redimensiona en
-píxeles físicos al monitor primario (posición y tamaño), sin bordes y siempre
+píxeles físicos al monitor elegido (posición y tamaño), sin bordes y siempre
 encima, pero **sin** `set_fullscreen(true)` (D5). El layout ya era relativo al
 viewport, así que el cambio no tocó una sola línea de estilo. Como consecuencia,
 Foco dejó de ser arrastrable: una ventana pegada al monitor no se mueve.
+
+**Y por eso la pantalla se elige, no se arrastra.** Antes las dos ventanas
+estaban clavadas al monitor **primario**, lo que en un escritorio de dos
+pantallas es simplemente el monitor equivocado la mitad del tiempo. Arrastrarlas
+no era una opción: el chequeo de 1 Hz de `keep_aligned` las devuelve a su
+rectángulo, así que la ventana volvería sola en un segundo. La fila **Pantalla**
+de MODOS resuelve lo mismo sin pelearle a esa alineación —aparece sólo con dos
+monitores o más, porque un selector de una opción no es una elección— y vale
+para Foco **y** Ambiente a la vez: las dos son la misma presencia en la misma
+pantalla, y separarlas serían dos ajustes para una decisión.
+
+Se guarda el **nombre** que reporta Windows (`\\.\DISPLAY1`), que es lo único
+estable: el orden de la lista y las coordenadas cambian al enchufar o
+desenchufar algo. Ausente = el primario, *el que sea*, así que cambiar el
+monitor principal desde Windows sigue funcionando sin tocar Cairn. Si la
+pantalla elegida se desenchufa, las ventanas caen al primario y **la elección
+no se borra**: volver a enchufarla la restaura sola.
+
+**Foco se puede apartar aunque el ciclo esté vencido, y el ciclo no se mueve.**
+Minimizarla —con `Win + ↓` o desde la barra de tareas— o abrir la carpeta de
+notas la baja a Ambiente. Antes no se podía: el cálculo de qué ventana mostrar
+devolvía Foco mientras la fase estuviera vencida, así que la ventana volvía
+sola. Ahora hay un bit de "el usuario la apartó" que caduca solo al salir de
+vencido, de modo que la pausa siguiente vuelve a interrumpir. **La fase sigue en
+`Elapsed` y la barra de Ambiente se queda al 100 %:** apartar la ventana no es
+confirmar, y solo LISTO reinicia el ciclo (CLAUDE.md §2).
+
+**Cambiar de modo tiene dos sabores.** Elegirlo (submenú de la bandeja, tarjetas
+de MODOS, botón `MODO` del widget) guarda `default_mode`; traer una ventana por
+esta vez (`Ajustes` de la bandeja, volver a ejecutar el `.exe`, apartar Foco) no
+lo toca. Cuando todo pasaba por el mismo camino, elegir Widget como modo por
+defecto y después abrir Ajustes reescribía el archivo con `"foco"`, y la app
+arrancaba en Foco para siempre.
+
+Las dos marcas dicen cosas distintas, y cada una es cierta: **la del menú de la
+bandeja sigue lo que estás viendo** (se mueve siempre, guarde o no — dejarla en
+Foco después de minimizar a Ambiente es una mentira que se ve de un vistazo), y
+**la tarjeta de MODOS sigue el archivo**, porque su título dice "modo por
+defecto".

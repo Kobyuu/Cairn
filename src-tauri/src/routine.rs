@@ -52,9 +52,18 @@ fn tmp_path(path: &Path) -> PathBuf {
 /// hay rutina" es el arranque normal, y "el disco esta lleno" o "no tengo
 /// permiso" no se pueden disimular devolviendo el ejemplo -el usuario creeria
 /// que perdio la rutina y la reescribiria encima-.
+///
+/// **Se le saca el BOM de UTF-8 si lo trae.** El Bloc de Notas ofrece
+/// "UTF-8 con BOM" en su desplegable de codificacion, y `read_to_string` deja
+/// ese `\u{feff}` como primer caracter del texto. Cualquier cosa que mire el
+/// principio del documento -el `#` del titulo, una casilla en la linea 1- deja
+/// de reconocerlo, y sin un solo error: la etiqueta de Foco se queda vacia y
+/// nadie sabe por que. Se limpia ACA, en la unica puerta por la que entra el
+/// archivo, y no en cada funcion que lo parsea. Al guardar se escribe sin BOM,
+/// asi que el archivo queda normalizado en la primera edicion.
 pub fn read_at(path: &Path) -> io::Result<String> {
     match fs::read_to_string(path) {
-        Ok(text) => Ok(text),
+        Ok(text) => Ok(text.strip_prefix('\u{feff}').unwrap_or(&text).to_string()),
         Err(error) if error.kind() == io::ErrorKind::NotFound => {
             write_at(path, DEFAULT_ROUTINE)?;
             Ok(DEFAULT_ROUTINE.to_string())
@@ -133,6 +142,63 @@ pub fn routine_write(app: AppHandle, content: String) -> Result<(), String> {
         .map_err(|error| format!("no se pudo guardar {}: {error}", path.display()))
 }
 
+/// Cuando se toco `routine.md` por ultima vez, en epoch-ms.
+///
+/// `None` si el archivo todavia no existe o si el sistema no expone la fecha
+/// de modificacion: es un dato de adorno de la fila RUTINA de Ajustes, y no
+/// tenerlo no puede ser un error que rompa el panel.
+///
+/// Epoch-ms y no un texto ya formateado por la misma razon que el temporizador
+/// manda `deadline_ms`: el formato es decision de la vista, y "hace 3 dias"
+/// cambia con el reloj sin que el archivo se toque.
+#[tauri::command]
+pub fn routine_info(app: AppHandle) -> Option<u64> {
+    let path = routine_path(&app).ok()?;
+    let modified = fs::metadata(&path).ok()?.modified().ok()?;
+    let since_epoch = modified.duration_since(std::time::UNIX_EPOCH).ok()?;
+    u64::try_from(since_epoch.as_millis()).ok()
+}
+
+/// Abre el Explorador con `routine.md` seleccionado.
+///
+/// `explorer.exe /select,<ruta>` en vez de una dependencia (`tauri-plugin-opener`,
+/// `opener`) para abrir una carpeta: Windows es el unico target (CLAUDE.md §1) y
+/// esto son cuatro lineas de `std`.
+///
+/// **Va por `raw_arg` y no por `arg`, y no es capricho.** `explorer.exe` no
+/// parsea su linea de comandos con `CommandLineToArgvW`: la unica forma que
+/// entiende es `/select,"<ruta>"`, con las comillas **alrededor de la ruta**.
+/// `Command::arg` entrecomilla el argumento ENTERO en cuanto tiene un espacio
+/// -`"/select,C:\Users\Juan Manuel\..."`- y con la comilla adelante del
+/// `/select` el Explorador ignora el pedido y abre Documentos. No se nota en un
+/// usuario sin espacios en el nombre, que es como se cuela hasta produccion.
+/// `raw_arg` es seguro (no es `unsafe`) y la ruta la arma `app_data_dir`, no
+/// llega por IPC, asi que no hay superficie de inyeccion.
+///
+/// **El codigo de salida no se mira**: `explorer.exe` devuelve 1 aunque haya
+/// abierto la ventana perfectamente, asi que chequearlo reportaria un error que
+/// no existe. Lo unico que se propaga es no haber podido lanzar el proceso.
+#[tauri::command]
+pub fn routine_reveal(app: AppHandle) -> Result<(), String> {
+    use std::os::windows::process::CommandExt;
+
+    let path = routine_path(&app)?;
+    // La carpeta puede no existir todavia si nunca se abrio la rutina; leerla
+    // la crea con el ejemplo, y asi el Explorador no abre en la nada.
+    read_at(&path).map_err(|error| format!("no se pudo leer {}: {error}", path.display()))?;
+    std::process::Command::new("explorer.exe")
+        .raw_arg(format!("/select,\"{}\"", path.display()))
+        .spawn()
+        .map_err(|error| format!("no se pudo abrir el Explorador: {error}"))?;
+
+    // Y Cairn se saca de encima. Foco es pantalla completa y always-on-top:
+    // sin esto el Explorador se abre DETRAS y hay que minimizar a mano, que es
+    // justo el paso que este comando venia a ahorrar. Se aparta despues de
+    // lanzarlo, para no esconder nada si el proceso no arranco.
+    crate::modes::dismiss_focus(&app);
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -170,6 +236,21 @@ mod tests {
         write_at(&path, "# La mia\n").expect("el usuario la edita");
 
         assert_eq!(read_at(&path).expect("segunda lectura"), "# La mia\n");
+    }
+
+    #[test]
+    fn a_bom_left_by_notepad_is_stripped_on_read() {
+        // El Bloc de Notas ofrece "UTF-8 con BOM" en su desplegable de
+        // codificacion. Sin esta limpieza el `#` deja de ser el primer caracter
+        // de la linea, el titulo no matchea, y la etiqueta de Foco queda vacia
+        // sin un solo error a la vista.
+        let path = temp_dir("bom").join(ROUTINE_FILE);
+        fs::write(&path, "\u{feff}# La mia\n").expect("escribir con BOM");
+
+        let text = read_at(&path).expect("leer");
+
+        assert_eq!(text, "# La mia\n");
+        assert!(!text.starts_with('\u{feff}'));
     }
 
     #[test]

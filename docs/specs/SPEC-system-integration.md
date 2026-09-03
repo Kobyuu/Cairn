@@ -17,7 +17,7 @@ opcionalmente, un paquete JS que expone sus comandos al frontend.
 | Plugin                         | Para qué                                |
 | ------------------------------ | --------------------------------------- |
 | `tauri-plugin-store`           | `store.json` de ajustes                 |
-| `tauri-plugin-notification`    | notificación de Windows al vencer       |
+| `tauri-plugin-notification`    | notificación de Windows al vencer — **quitado en la etapa 6**, ver abajo |
 | `tauri-plugin-single-instance` | traer al frente la instancia ya abierta |
 | `tauri-plugin-autostart`       | iniciar con Windows                     |
 
@@ -165,7 +165,9 @@ a 1 minuto desde la pantalla de ajustes.
 
 **Notificación**
 
-- [ ] Al vencer aparece la notificación de Windows con "Cairn" y
+- [ ] ~~Al vencer aparece la notificación de Windows~~ — **ya no aplica**, ver
+      la nota del final. Lo que aparece al vencer es la pantalla de Foco.
+- [ ] (histórico) Al vencer aparecía la notificación de Windows con "Cairn" y
       "Es hora de una pausa.".
 - [ ] Apretar un botón justo en el segundo del vencimiento **igual** notifica.
 
@@ -213,3 +215,22 @@ a 1 minuto desde la pantalla de ajustes.
 - La ventana de Ajustes se crea bajo demanda con `WebviewWindowBuilder` y se
   destruye al cerrarse (decisión D4). Si en la práctica molesta que pierda estado
   al cerrarla, se revisa entonces — no se anticipa.
+
+---
+
+## Nota de la etapa 6: se quitó la notificación del sistema
+
+`tauri-plugin-notification` y el toast al vencer salieron del proyecto en la
+etapa 6, con su dependencia de Cargo. Dos razones que se suman:
+
+1. **Es redundante.** El toast aparecía en el mismo instante en que la pantalla
+   de Foco tapa el monitor entero, o sea un aviso encima del aviso.
+2. **Sale con la identidad de PowerShell.** Un toast de Windows necesita un
+   `AppUserModelID` registrado por un instalador, y Cairn todavía no tiene uno
+   (CLAUDE.md §4). Sin eso el plugin cae al AUMID de PowerShell y el aviso se
+   ve como si lo mandara otro programa.
+
+El aviso de Cairn **es** la pantalla de Foco, más el tono de `src/sound.ts` si
+el interruptor de Ajustes está encendido. Un toast propio sólo tendría sentido
+como *alternativa* a que Foco tome la pantalla, y eso es una decisión de
+producto que todavía no se tomó. Detalle en `docs/DESIGN.md` §7.

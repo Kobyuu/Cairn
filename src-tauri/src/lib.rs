@@ -27,15 +27,18 @@ pub fn run() {
             // que traer al frente, asi que sin esto el doble click no haria
             // nada visible. Es un cambio de modo de verdad, con su marca en la
             // bandeja y su escritura en `store.json`.
-            modes::set_mode(app, modes::Mode::Focus);
+            // `show_mode` y no `set_mode`: volver a ejecutar el .exe es
+            // "mostrame la app", no elegir el modo con el que tiene que
+            // arrancar. Con `set_mode` reescribia `default_mode` en "foco" y se
+            // llevaba puesta la preferencia del usuario.
+            modes::show_mode(app, modes::Mode::Focus);
         }))
         .plugin(tauri_plugin_store::Builder::default().build())
-        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_autostart::Builder::new().build())
         // `invoke_handler` es la lista de funciones de Rust que el frontend
         // puede llamar con `invoke("nombre")`. Los comandos propios de la app no
         // necesitan permiso en `capabilities/`: el ACL de Tauri v2 solo gatea
-        // los comandos `core:*` y los de plugins. Por eso los cuatro plugins se
+        // los comandos `core:*` y los de plugins. Por eso los tres plugins se
         // usan solo desde Rust y hacia el webview van estos comandos nuestros.
         .invoke_handler(tauri::generate_handler![
             timer::timer_snapshot,
@@ -47,8 +50,15 @@ pub fn run() {
             timer::timer_set_quick_snooze,
             settings::settings_snapshot,
             settings::settings_set_autostart,
+            settings::settings_set_theme,
+            settings::settings_set_sound,
+            modes::modes_set,
+            modes::modes_monitors,
+            modes::modes_set_monitor,
             routine::routine_read,
             routine::routine_write,
+            routine::routine_info,
+            routine::routine_reveal,
         ])
         .setup(|app| {
             let handle = app.handle().clone();
@@ -112,17 +122,27 @@ pub fn run() {
             // corre solo al modo mas discreto en vez de quedarse escondido en
             // la barra de tareas sin decir nada.
             //
-            // El `0x0` no es un truco: tao NO tiene un evento `Minimized` -su
-            // propio codigo lo dice, "Send WindowEvent::Minimized here if we
-            // decide to implement one"-, asi que lo unico que llega es el
-            // WM_SIZE que Windows manda al minimizar, con el area de cliente
-            // en cero. Verificado contra tao 0.35.3, no de memoria.
-            tauri::WindowEvent::Resized(size)
-                if size.width == 0
-                    && size.height == 0
-                    && window.label() == modes::Mode::Focus.label() =>
+            // tao NO tiene un evento `Minimized` -su propio codigo lo dice,
+            // "Send WindowEvent::Minimized here if we decide to implement
+            // one"-, asi que hay que deducirlo. Se escuchan los DOS eventos que
+            // Windows manda al minimizar, y en los dos se le pregunta al
+            // sistema en vez de adivinar por el tamaño: el `Resized(0,0)` que
+            // se miraba antes llega con el atajo de la barra de tareas pero no
+            // con `Win + flecha abajo`, que fue el gesto que quedo sin
+            // funcionar. `is_minimized()` es `IsIconic`: la misma respuesta por
+            // los dos caminos.
+            //
+            // `is_minimized()` es un getter -manda un mensaje al loop de
+            // eventos y espera la respuesta-, pero aca es seguro: este callback
+            // corre en el hilo principal, y `send_user_message` de
+            // `tauri-runtime-wry` 2.11.4 (lib.rs:239) atiende el mensaje EN
+            // LINEA cuando el que llama ya es el hilo principal. Verificado
+            // contra la fuente, no de memoria (CLAUDE.md §9).
+            tauri::WindowEvent::Resized(_) | tauri::WindowEvent::Focused(false)
+                if window.label() == modes::Mode::Focus.label()
+                    && window.is_minimized().unwrap_or(false) =>
             {
-                modes::set_mode(window.app_handle(), modes::Mode::Ambient);
+                modes::dismiss_focus(window.app_handle());
             }
             _ => {}
         })

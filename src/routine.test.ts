@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { countCheckboxes, toggleCheckboxAtLine, uncheckAll } from "./routine";
+import {
+  countCheckboxes,
+  editedLabel,
+  routineTitle,
+  toggleCheckboxAtLine,
+  uncheckAll,
+} from "./routine";
 
 // La rutina es contenido que Manu escribio a mano: la unica forma de perderla
 // es que una de estas funciones toque un byte que no le corresponde. Por eso
@@ -178,5 +184,76 @@ describe("uncheckAll", () => {
   it("un documento sin casillas vuelve tal cual", () => {
     const doc = "# titulo\n\ntexto suelto\n";
     expect(uncheckAll(doc)).toBe(doc);
+  });
+});
+
+describe("routineTitle", () => {
+  it("devuelve el primer titulo de nivel 1", () => {
+    expect(routineTitle(DOC)).toBe("Corrección de postura");
+  });
+
+  it("ignora los titulos de nivel 2 y agarra el primer '#' aunque no este arriba", () => {
+    expect(routineTitle("## Cuello\n\n# El de verdad\n\n# Otro\n")).toBe(
+      "El de verdad",
+    );
+  });
+
+  it("tolera espacios de sobra y almohadillas de cierre", () => {
+    expect(routineTitle("   #    Rutina de la mañana   ###  \n")).toBe(
+      "Rutina de la mañana",
+    );
+  });
+
+  it("sin espacio delante, las almohadillas son texto y no cierre", () => {
+    // La regla de markdown: `# Titulo ###` cierra, `# Titulo###` no.
+    expect(routineTitle("# Rutina###\n")).toBe("Rutina###");
+  });
+
+  it("un BOM adelante no esconde el titulo", () => {
+    // `read_at` en Rust ya lo saca, pero esta funcion recibe un string
+    // cualquiera. El BOM cuenta como espacio en blanco para `trimStart`, asi
+    // que la indentacion sigue siendo valida y el `#` se reconoce igual.
+    expect(routineTitle("﻿# La mia\n")).toBe("La mia");
+  });
+
+  it("devuelve null si no hay titulo, si esta vacio o si el '#' no es un titulo", () => {
+    expect(routineTitle("- [ ] Un paso suelto\n")).toBeNull();
+    expect(routineTitle("")).toBeNull();
+    // Sin espacio despues de la almohadilla no es un titulo de markdown, es
+    // una etiqueta: `#rutina` tiene que seguir siendo texto.
+    expect(routineTitle("#rutina\n")).toBeNull();
+    // Un titulo vacio no sirve de etiqueta: no hay nada que mostrar.
+    expect(routineTitle("#   \n")).toBeNull();
+  });
+});
+
+describe("editedLabel", () => {
+  const DAY = 86_400_000;
+  // Mediodia, para que restar horas no cruce la medianoche por accidente.
+  const NOON = new Date(2026, 8, 3, 12, 0, 0).getTime();
+
+  it("cuenta dias de calendario, no bloques de 24 horas", () => {
+    expect(editedLabel(NOON, NOON)).toBe("editado hoy");
+    expect(editedLabel(NOON - DAY, NOON)).toBe("editado ayer");
+    expect(editedLabel(NOON - 3 * DAY, NOON)).toBe("editado hace 3 días");
+  });
+
+  it("dos horas antes sigue siendo hoy aunque hayan pasado horas", () => {
+    expect(editedLabel(NOON - 2 * 3_600_000, NOON)).toBe("editado hoy");
+  });
+
+  it("anoche a las 23 es ayer aunque falte poco para 24 horas", () => {
+    const lastNight = new Date(2026, 8, 2, 23, 0, 0).getTime();
+    expect(editedLabel(lastNight, NOON)).toBe("editado ayer");
+  });
+
+  it("sin fecha no dice nada", () => {
+    expect(editedLabel(null, NOON)).toBeNull();
+  });
+
+  // Un archivo con fecha futura (reloj del sistema movido, copia restaurada)
+  // no puede imprimir "hace -2 dias".
+  it("una fecha futura se lee como hoy", () => {
+    expect(editedLabel(NOON + 5 * DAY, NOON)).toBe("editado hoy");
   });
 });

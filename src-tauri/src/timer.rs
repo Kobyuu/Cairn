@@ -279,18 +279,18 @@ where
 
 /// El punto UNICO por el que sale cualquier cambio de estado hacia afuera.
 ///
-/// Existe para que la notificacion no se le escape a nadie. La transicion a
-/// `Elapsed` puede ocurrir en dos lugares: el hilo de 1 Hz y el `advance` que
-/// `mutate` corre antes de cada accion. Si el aviso viviera solo en el ticker,
-/// apretar un boton en el mismo segundo del vencimiento adelantaria la
+/// Existe para que las cuatro vistas no puedan discrepar. La transicion a
+/// `Elapsed` puede ocurrir en dos lugares -el hilo de 1 Hz y el `advance` que
+/// `mutate` corre antes de cada accion-, y si el aviso viviera solo en el
+/// ticker, apretar un boton en el mismo segundo del vencimiento adelantaria la
 /// transicion, el ticker no veria ningun cambio, y el vencimiento pasaria sin
-/// notificacion: el unico momento en que la app tiene que hablar.
-fn announce(app: &AppHandle, before: Phase, snapshot: TimerState) {
-    let just_elapsed = matches!(snapshot.phase, Phase::Elapsed { .. })
-        && !matches!(before, Phase::Elapsed { .. });
-    if just_elapsed {
-        notify_elapsed(app);
-    }
+/// que nadie se entere: el unico momento en que la app tiene que hablar.
+///
+/// `before` sigue en la firma aunque hoy no se lea: es la fase anterior, y es
+/// lo unico con lo que se puede detectar una TRANSICION en vez de un estado.
+/// Cualquier cosa que tenga que pasar "al vencer" y no "mientras esta vencido"
+/// se engancha aca.
+fn announce(app: &AppHandle, _before: Phase, snapshot: TimerState) {
     emit_changed(app, snapshot);
     crate::tray::sync(app, snapshot);
     // La cuarta vista que hay que sincronizar: cual de las tres ventanas se ve.
@@ -298,33 +298,6 @@ fn announce(app: &AppHandle, before: Phase, snapshot: TimerState) {
     // que la ventana de Foco aparezca en el mismo instante en que la bandeja se
     // entera del vencimiento, y no un tick despues.
     crate::modes::sync(app, snapshot.phase);
-}
-
-/// La notificacion nativa de Windows al vencer.
-///
-/// No hace falta pedir permiso: en escritorio el plugin devuelve `Granted` sin
-/// preguntar. Lo que si hace falta es el identificador propio de la app
-/// (`com.kobyuu.cairn`, fijado en la etapa 1): con el `com.tauri.dev` de
-/// fabrica, Windows descarta el toast sin decir por que.
-///
-/// OJO con el `Err` de abajo: **casi nunca se va a ver**. El plugin hace el
-/// `show()` real adentro de un `spawn`, asi que esta llamada devuelve `Ok(())`
-/// aunque Windows despues descarte el toast. El log sirve para un fallo al
-/// encolar, no para "no aparecio la notificacion": si eso pasa, la consola va a
-/// estar muda y hay que mirar el identificador de la app y los avisos de
-/// Windows, no este mensaje.
-fn notify_elapsed(app: &AppHandle) {
-    use tauri_plugin_notification::NotificationExt;
-
-    let shown = app
-        .notification()
-        .builder()
-        .title("Cairn")
-        .body("Es hora de una pausa.")
-        .show();
-    if let Err(error) = shown {
-        eprintln!("[cairn] no se pudo mostrar la notificacion: {error}");
-    }
 }
 
 /// Avisa a las ventanas. El error se loguea y no se propaga: el `emit` es el
