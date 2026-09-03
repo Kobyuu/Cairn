@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { elapsedMs, formatDuration, parseMinutes, remainingMs, type Phase } from "./timer";
+import {
+  cycleProgress,
+  elapsedMs,
+  FINAL_STRETCH,
+  formatDuration,
+  parseMinutes,
+  remainingMs,
+  type Phase,
+} from "./timer";
 
 describe("parseMinutes", () => {
   it("acepta enteros de un minuto para arriba", () => {
@@ -27,22 +35,22 @@ describe("parseMinutes", () => {
 
 describe("remainingMs", () => {
   it("running: returns deadline minus now", () => {
-    const phase: Phase = { kind: "running", deadlineMs: 10_000 };
+    const phase: Phase = { kind: "running", deadlineMs: 10_000, cycleMs: 60_000 };
     expect(remainingMs(phase, 4_000)).toBe(6_000);
   });
 
   it("running: never negative once now is past the deadline", () => {
-    const phase: Phase = { kind: "running", deadlineMs: 10_000 };
+    const phase: Phase = { kind: "running", deadlineMs: 10_000, cycleMs: 60_000 };
     expect(remainingMs(phase, 999_999_999)).toBe(0);
   });
 
   it("running: exactly zero at the deadline", () => {
-    const phase: Phase = { kind: "running", deadlineMs: 10_000 };
+    const phase: Phase = { kind: "running", deadlineMs: 10_000, cycleMs: 60_000 };
     expect(remainingMs(phase, 10_000)).toBe(0);
   });
 
   it("paused: returns the frozen remaining duration regardless of now", () => {
-    const phase: Phase = { kind: "paused", remainingMs: 7_000 };
+    const phase: Phase = { kind: "paused", remainingMs: 7_000, cycleMs: 60_000 };
     expect(remainingMs(phase, 0)).toBe(7_000);
     expect(remainingMs(phase, 999_999)).toBe(7_000);
   });
@@ -72,8 +80,8 @@ describe("elapsedMs", () => {
   });
 
   it("running/paused: always zero", () => {
-    expect(elapsedMs({ kind: "running", deadlineMs: 10_000 }, 20_000)).toBe(0);
-    expect(elapsedMs({ kind: "paused", remainingMs: 10_000 }, 20_000)).toBe(0);
+    expect(elapsedMs({ kind: "running", deadlineMs: 10_000, cycleMs: 60_000 }, 20_000)).toBe(0);
+    expect(elapsedMs({ kind: "paused", remainingMs: 10_000, cycleMs: 60_000 }, 20_000)).toBe(0);
   });
 });
 
@@ -105,5 +113,57 @@ describe("formatDuration", () => {
 
   it("just under an hour stays in mm:ss form", () => {
     expect(formatDuration(3_599_000)).toBe("59:59");
+  });
+});
+
+describe("cycleProgress", () => {
+  // Un ciclo de 45 min que vence en T0 + 45 min.
+  const MIN = 60_000;
+  const CYCLE = 45 * MIN;
+  const T0 = 1_767_225_600_000;
+  const running: Phase = { kind: "running", deadlineMs: T0 + CYCLE, cycleMs: CYCLE };
+
+  it("arranca en 0% y termina en 100%", () => {
+    expect(cycleProgress(running, T0)).toBe(0);
+    expect(cycleProgress(running, T0 + CYCLE)).toBe(1);
+  });
+
+  it("va escalonado de a 1%, sin easing", () => {
+    // Justo antes del 25%: el escalon TRUNCA, no redondea, asi que sigue en 24.
+    expect(cycleProgress(running, T0 + CYCLE * 0.2499)).toBe(0.24);
+    expect(cycleProgress(running, T0 + CYCLE * 0.25)).toBe(0.25);
+    // Y entre dos escalones no hay valores intermedios.
+    expect(cycleProgress(running, T0 + CYCLE * 0.253)).toBe(0.25);
+    expect(cycleProgress(running, T0 + CYCLE * 0.2599)).toBe(0.25);
+  });
+
+  it("el umbral del ultimo tramo cae exactamente en 90%", () => {
+    expect(cycleProgress(running, T0 + CYCLE * 0.8999)).toBeLessThan(FINAL_STRETCH);
+    expect(cycleProgress(running, T0 + CYCLE * 0.9)).toBe(FINAL_STRETCH);
+    expect(cycleProgress(running, T0 + CYCLE * 0.9)).toBeGreaterThanOrEqual(FINAL_STRETCH);
+  });
+
+  it("mide contra el ciclo en curso, no contra el intervalo configurado", () => {
+    // Posponer 5 min con un intervalo de 45: a los 2m30s la barra va por la
+    // mitad. Si midiera contra el intervalo, iria por el 5%.
+    const snoozed: Phase = { kind: "running", deadlineMs: T0 + 5 * MIN, cycleMs: 5 * MIN };
+    expect(cycleProgress(snoozed, T0 + 2.5 * MIN)).toBe(0.5);
+  });
+
+  it("pausado queda congelado en el avance que tenia", () => {
+    const paused: Phase = { kind: "paused", remainingMs: CYCLE / 2, cycleMs: CYCLE };
+    expect(cycleProgress(paused, T0)).toBe(0.5);
+    // El "ahora" no lo mueve: es lo que hace que la barra se quede quieta.
+    expect(cycleProgress(paused, T0 + 10 * CYCLE)).toBe(0.5);
+  });
+
+  it("vencido es 100% aunque el cronometro siga subiendo", () => {
+    const elapsed: Phase = { kind: "elapsed", sinceMs: T0 };
+    expect(cycleProgress(elapsed, T0 + 10 * CYCLE)).toBe(1);
+  });
+
+  it("nunca se sale de 0..1 con el deadline pasado o el reloj para atras", () => {
+    expect(cycleProgress(running, T0 + 10 * CYCLE)).toBe(1);
+    expect(cycleProgress(running, T0 - 10 * CYCLE)).toBe(0);
   });
 });

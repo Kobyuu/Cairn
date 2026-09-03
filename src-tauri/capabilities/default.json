@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permisos de la ventana principal.",
-  "windows": ["main"],
+  "description": "Permisos de las tres ventanas de presencia.",
+  "windows": ["foco", "widget", "ambient"],
   "permissions": ["core:default", "core:window:allow-start-dragging"]
 }
