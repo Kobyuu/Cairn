@@ -99,6 +99,21 @@ body,
   margin: 0;
 }
 
+/* La barra de scroll, con la tinta del tema en vez de la gris de Windows.
+
+   Van las propiedades ESTANDAR y no `::-webkit-scrollbar`: WebView2 es
+   Chromium, y desde la version 121 la estandar le gana a la de -webkit-, asi
+   que escribir las dos seria mantener una que nunca se aplica. `thin` ademas
+   se lleva puestas las flechas de arriba y abajo, que es justo lo que
+   desentona con una pantalla que no tiene un solo control cuadrado.
+
+   Las dos son propiedades HEREDADAS, asi que definirlas en `html` alcanza para
+   toda la app y no hace falta un selector universal. */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--fg-18) transparent;
+}
+
 body {
   background: var(--color-bg);
   color: var(--color-fg);
@@ -115,6 +130,11 @@ body {
 html[data-view="widget"] body,
 html[data-view="ambient"] body {
   background: transparent;
+  /* Y ninguna de las dos scrollea NUNCA: son una caja de 176 px y una franja
+     de 5 px, no documentos. Sin esto, cualquier contenido que se pase de
+     largo por un pixel mete una barra de scroll adentro de la ventana y le
+     come el ancho al contenido. */
+  overflow: hidden;
 }
 
 /* Las cuatro animaciones de la marca. La respiracion de 5,5 s es el unico ritmo

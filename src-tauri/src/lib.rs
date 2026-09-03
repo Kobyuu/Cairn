@@ -105,6 +105,22 @@ pub fn run() {
             {
                 modes::remember_widget_move(window.app_handle(), position.x, position.y);
             }
+            // Minimizar Foco es pedir la pantalla de vuelta, asi que Cairn se
+            // corre solo al modo mas discreto en vez de quedarse escondido en
+            // la barra de tareas sin decir nada.
+            //
+            // El `0x0` no es un truco: tao NO tiene un evento `Minimized` -su
+            // propio codigo lo dice, "Send WindowEvent::Minimized here if we
+            // decide to implement one"-, asi que lo unico que llega es el
+            // WM_SIZE que Windows manda al minimizar, con el area de cliente
+            // en cero. Verificado contra tao 0.35.3, no de memoria.
+            tauri::WindowEvent::Resized(size)
+                if size.width == 0
+                    && size.height == 0
+                    && window.label() == modes::Mode::Focus.label() =>
+            {
+                modes::set_mode(window.app_handle(), modes::Mode::Ambient);
+            }
             _ => {}
         })
         // `build` + `run` en vez de `.run()` directo: es la unica forma de
