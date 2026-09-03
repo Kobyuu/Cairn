@@ -42,22 +42,32 @@ Si `notes/routine.md` no existe al arrancar, se crea con una rutina de ejemplo.
 
 **Nada más.** La edición es un `<textarea>` pelado: sin ProseMirror, sin TipTap,
 sin editor WYSIWYG. Marcar una casilla desde la vista renderizada es voltear
-`[ ]`↔`[x]` en el markdown fuente por índice de casilla — unas 15 líneas, y deja
-el archivo legible en cualquier editor de texto.
+`[ ]`↔`[x]` en el markdown fuente, en la línea que reporta `remark-gfm` — unas
+15 líneas, y deja el archivo legible en cualquier editor de texto.
 
 ## Alcance
 
-- Comandos de Rust: `read_routine()` y `write_routine(content)`. Ambos declarados
-  en `src-tauri/capabilities/`, o el `invoke` falla en runtime sin avisar.
+- Comandos de Rust: `routine_read()` y `routine_write(content)` -la convención
+  del repo es `<módulo>_<verbo>`, como `timer_snapshot`-. **No** van declarados
+  en `src-tauri/capabilities/`: el ACL de Tauri v2 solo gatea los comandos
+  `core:*` y los de plugins, y los propios de la app están permitidos por
+  defecto para todas las ventanas (CLAUDE.md §11, verificado contra Tauri
+  2.11.5). La versión previa de esta línea decía lo contrario y era falsa.
 - Panel colapsado por defecto en Foco, expandible con "ver rutina".
 - Dos estados: **lectura** (renderizado) y **edición** (`<textarea>` con el
   markdown crudo). Alternar entre ellos no pierde cambios sin guardar.
 - Marcar/desmarcar una casilla en modo lectura persiste al archivo.
+- **Confirmar el ciclo con `LISTO` desmarca la rutina entera.** Si no quedara
+  limpia, la pausa siguiente arrancaria con todo tildado y habria que
+  desmarcarlo a mano, que es exactamente el trabajo que la rutina viene a
+  ahorrar. Si no habia nada marcado, el archivo no se toca.
 
 ## Criterios de aceptación
 
-1. Al abrir Foco por primera vez existe `notes/routine.md` con contenido de
-   ejemplo, y el panel está **colapsado**.
+1. El panel arranca **colapsado**. La primera vez que se abre, `notes/routine.md`
+   existe y tiene contenido de ejemplo. _(La creación es perezosa: el archivo
+   aparece al abrir el panel o al apretar `LISTO`, no al abrir Foco. Arrancar la
+   app no tiene por qué escribir en disco algo que el usuario todavía no pidió.)_
 2. "ver rutina" expande el panel; el markdown se ve renderizado (títulos, listas,
    negritas), no como texto plano.
 3. Las listas con casillas se ven como casillas y se pueden marcar.
@@ -70,12 +80,19 @@ el archivo legible en cualquier editor de texto.
 ## Tests (TDD — se escriben ANTES del código)
 
 - `vitest` — el volteo de casillas es la lógica con bugs escondidos, así que es
-  una función pura `toggleCheckbox(markdown, index) -> markdown`:
+  una función pura. Va por **número de línea** y no por índice de casilla
+  (`toggleCheckboxAtLine(markdown, line) -> markdown`): el índice obliga a
+  mantener dos parsers que tienen que coincidir con el de `remark-gfm`, y
+  `react-markdown` ya entrega la línea exacta del fuente en
+  `node.position.start.line`. Razonado en `docs/plans/PLAN-routine.md`. Casos:
   - voltea la casilla N y **solo** esa;
   - `- [ ]` → `- [x]` y a la inversa;
-  - no confunde un `- [x]` dentro de un bloque de código con una casilla real;
+  - no confunde un `- [x]` dentro de un bloque de código con una casilla real
+    -para el volteo es estructural, porque la línea la decide `remark-gfm`; para
+    `countCheckboxes`, que mira el fuente entero, es un test de verdad-;
   - respeta la indentación de casillas anidadas;
-  - un índice fuera de rango devuelve el markdown sin cambios, sin lanzar;
+  - una línea fuera de rango, o que no empieza con una casilla, devuelve el
+    markdown sin cambios, sin lanzar;
   - preserva el resto del documento byte a byte, incluido el salto de línea final
     (perder el `\n` final en cada guardado es cómo un archivo se ensucia de a poco).
 - `cargo test` — `routine.rs`: `read` de un archivo inexistente devuelve el
@@ -91,6 +108,17 @@ el archivo legible en cualquier editor de texto.
       ven bien.
 - [ ] Expandir y colapsar mientras corre el cronómetro → el cronómetro no salta.
 - [ ] `notes/` borrado entero → arranca y lo recrea, sin error.
+- [ ] **Con el panel ya abierto**, editar `routine.md` desde afuera y marcar una
+      casilla → la app escribe el documento que tenía en memoria y se lleva
+      puesta la edición externa. Es el límite conocido: la relectura ocurre al
+      **abrir** el panel, no mientras está abierto.
+- [ ] Una casilla adentro de una cita (`> - [ ] algo`) se marca y se guarda.
+- [ ] Marcar todo, apretar `LISTO`, reabrir el panel → todo desmarcado, y el
+      resto del documento igual que antes.
+- [ ] Apretar `LISTO` sin haber abierto nunca el panel → no rompe nada, y al
+      abrirlo después la rutina está limpia.
+- [ ] Con "efectos de animación" apagado en Windows, el panel abre de golpe y
+      sin recorrido, pero abre.
 
 ## Límites
 
@@ -104,6 +132,9 @@ el archivo legible en cualquier editor de texto.
 
 ## Preguntas abiertas
 
-- El handoff todavía no diseñó la rutina expandida. Hasta que llegue, el panel usa
-  los tokens de Foco (Newsreader para el cuerpo, IBM Plex Mono para las etiquetas)
-  y se refina en la etapa 6.
+- ~~El handoff todavía no diseñó la rutina expandida.~~ Sí lo hizo:
+  `docs/design_handoff_cairn/Cairn Rutina.dc.html`, y es lo que se implementó.
+- La **lámina de referencia** del handoff (el marco con una imagen al costado de
+  la primera sección) no se implementó: es contenido del usuario y hoy no hay
+  forma de que el webview cargue un archivo de su disco sin habilitar el
+  protocolo de assets. Queda para cuando haga falta de verdad.
