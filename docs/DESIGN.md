@@ -243,27 +243,39 @@ El trabajo está seguido en el issue [#3](https://github.com/Kobyuu/Cairn/issues
 | Pieza                          | Estado                                                        |
 | ------------------------------ | ------------------------------------------------------------- |
 | Tokens, tipografía, movimiento | **Hecho** en `src/index.css`                                  |
-| Foco                           | **Hecho** en `src/App.tsx`, adaptado a la etapa 3 (ver abajo) |
+| Foco                           | **Hecho** en `src/views/Foco.tsx`, ya a pantalla completa      |
 | Ajustes                        | **Parcial**: CICLO (intervalo y posponer rápido) y SISTEMA (autostart). Faltan MODOS, RUTINA y APARIENCIA |
 | Rutina                         | Etapa 5                                                       |
-| Widget · Ambiente              | Etapa 4                                                       |
+| Widget · Ambiente              | **Hecho** en `src/views/Widget.tsx` y `src/views/Ambient.tsx` (ver abajo lo omitido) |
 | Fuentes empaquetadas           | **Hecho** — Newsreader Variable (eje `opsz`) + IBM Plex Mono 400 |
 | Landing                        | Issue #3                                                      |
 
-**Adaptación de Foco a la etapa 3, anotada:** el handoff dibuja Foco en su estado
-vencido (`llevás en pausa` + cronómetro ascendente). Como hasta la etapa 4 hay una
-sola ventana, la misma pantalla cubre además `running` y `paused` cambiando la
-sobre-línea y la fila de botones, con el resto del encuadre idéntico. Cuando
-lleguen los tres modos, `running` se va al Widget y al Ambiente, y Foco vuelve a
-ser solo lo que el handoff dibuja.
+**Foco sigue cubriendo las tres fases, y es a propósito.** El handoff lo dibuja
+en su estado vencido (`llevás en pausa` + cronómetro ascendente). Ahora que
+existen los tres modos, `running` tiene además su Widget y su Ambiente — pero
+Foco es también un modo que se puede elegir y dejar puesto todo el día, así que
+la misma pantalla sigue pintando `running` y `paused` cambiando la sobre-línea y
+la fila de botones, con el encuadre idéntico.
+
+**Lo que se omitió del handoff del Widget, con su razón:**
+
+- **`backdrop-filter: blur(14px)`.** Detrás de una ventana transparente no hay
+  nada que el compositor del webview pueda muestrear: el blur no hace nada. El
+  desenfoque real sería `windowEffects` (acrylic de Windows 11), que trae su
+  propio tinte y pelea con la paleta. Queda para la etapa 6 si hace falta.
+- **La sombra larga (`box-shadow`).** Es un color hardcodeado (CLAUDE.md §5) y
+  sobre una ventana transparente se ve como un halo cuadrado, no como sombra.
+- **Los botones de pausa y modo del estado hover, y el estado de arrastre**
+  (escala .96, rotación -.6°, borde punteado). La bandeja ya tiene pausa y los
+  tres modos; el arrastre lo dibuja Windows. Es decoración de la etapa 6.
 
 **Lo que NO se implementó todavía y hay que saber:** el selector de tema (los
 tokens de `[data-theme="light"]` ya existen y `store.json` ya guarda `theme`,
 falta el control y el comando que lo escriba), el menú `▾` de posponer arbitrario
 en la pastilla partida, el `pauseCountToday`, y el sonido al avisar.
 
-**La ventana todavía no es pantalla completa.** El handoff define Foco como
-`100vw × 100vh`; hasta la etapa 4 hay una sola ventana y quedó en 1100 × 760 con
-un mínimo de 880 × 620 — lo que hace falta para que el cronómetro de 196 px y la
-columna de Ajustes de 720 px entren sin recortarse. El layout ya es relativo al
-viewport, así que pasar a pantalla completa en la etapa 4 no lo toca.
+**Foco ya es pantalla completa.** Desde la etapa 4 la ventana se redimensiona en
+píxeles físicos al monitor primario (posición y tamaño), sin bordes y siempre
+encima, pero **sin** `set_fullscreen(true)` (D5). El layout ya era relativo al
+viewport, así que el cambio no tocó una sola línea de estilo. Como consecuencia,
+Foco dejó de ser arrastrable: una ventana pegada al monitor no se mueve.

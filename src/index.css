@@ -31,6 +31,13 @@
   --color-ac: oklch(0.76 0.05 150);
   --color-ac-hover: oklch(0.82 0.055 150);
 
+  /* Tinta de Ambiente (etapa 4). Es un color PROPIO, elegido por el fondo de
+     la ventana de atras y no por el tema de la app (docs/DESIGN.md §2): la
+     ventana es transparente y flota sobre el escritorio, no sobre --color-bg.
+     Hoy no hay forma de leer que hay detras, asi que sigue al tema igual que
+     el resto -es una limitacion conocida, no la intencion final. */
+  --color-am: oklch(0.82 0.06 150);
+
   /* Newsreader para cifras y frases; IBM Plex Mono para etiquetas y datos.
      El nombre con "Variable" es el que registra el paquete de la variante
      variable; los que siguen son la red de contencion si el `.woff2` no
@@ -62,6 +69,9 @@
   --fg-9: color-mix(in oklab, var(--color-fg) 9%, transparent);
   --fg-8: color-mix(in oklab, var(--color-fg) 8%, transparent);
   --ac-55: color-mix(in oklab, var(--color-ac) 55%, transparent);
+  --ac-70: color-mix(in oklab, var(--color-ac) 70%, transparent);
+  --ac-90: color-mix(in oklab, var(--color-ac) 90%, transparent);
+  --bg-62: color-mix(in oklab, var(--color-bg) 62%, transparent);
   --bg-82: color-mix(in oklab, var(--color-bg) 82%, transparent);
 }
 
@@ -79,6 +89,7 @@
   --color-fg: #1a1c19;
   --color-ac: oklch(0.5 0.05 150);
   --color-ac-hover: oklch(0.56 0.055 150);
+  --color-am: oklch(0.42 0.05 150);
 }
 
 html,
@@ -95,6 +106,15 @@ body {
   /* La app no es un documento: no hay nada que seleccionar ni que arrastrar. */
   user-select: none;
   cursor: default;
+}
+
+/* Widget y Ambiente son ventanas transparentes de verdad (CLAUDE.md §11): la
+   transparencia se instala al CREAR el HWND, no se puede setear despues. Si
+   el `body` pintara el fondo del tema encima, la ventana aparecería como un
+   rectangulo opaco en vez de flotar sobre el escritorio. */
+html[data-view="widget"] body,
+html[data-view="ambient"] body {
+  background: transparent;
 }
 
 /* Las cuatro animaciones de la marca. La respiracion de 5,5 s es el unico ritmo

@@ -1,16 +1,16 @@
 import { useState } from "react";
-import type { Phase } from "./timer";
-import { elapsedMs, formatDuration, parseMinutes, remainingMs } from "./timer";
-import { useSettings } from "./useSettings";
-import { useTimer } from "./useTimer";
+import type { Phase } from "../timer";
+import { elapsedMs, formatDuration, parseMinutes, remainingMs } from "../timer";
+import { useSettings } from "../useSettings";
+import { useTimer } from "../useTimer";
 
 // Pantalla de Foco segun docs/DESIGN.md §4 (direccion "Aliento").
 //
-// Adaptacion anotada de la etapa 3: el handoff dibuja Foco en su estado vencido
-// -sobre-linea "llevas en pausa" y cronometro ascendente-. Como hasta la etapa 4
-// hay una sola ventana, la misma pantalla cubre tambien `running` y `paused`
-// cambiando la sobre-linea y la fila de botones; el encuadre es identico. Cuando
-// lleguen los tres modos, `running` se va al Widget y al Ambiente.
+// Etapa 4: Foco es la ventana del modo Foco -pantalla completa, elegida a
+// mano desde el widget o la bandeja- y ademas la que Rust muestra sola al
+// vencer el ciclo, sin importar en que modo estaba. `running` y `paused`
+// tambien se pintan aca (para cuando el usuario elige quedarse en Foco);
+// `Widget.tsx` y `Ambient.tsx` son las otras dos vistas de `running`.
 
 const CHIP_INTERVALS = [25, 45, 60, 90];
 const CHIP_SNOOZES = [2, 5, 10, 15];
@@ -96,7 +96,7 @@ function Backdrop() {
   );
 }
 
-/** Etiqueta entre dos hairlines de 56 px. Mono 10 px, .34em, 38 %. */
+/** Etiqueta entre dos hairlines de 56 px. Mono 10 px, 38 %. */
 function Overline({ children }: Readonly<{ children: string }>) {
   return (
     <div
@@ -268,7 +268,7 @@ function Section({
   );
 }
 
-export default function App() {
+export default function Foco() {
   const {
     snapshot,
     nowMs,
@@ -309,18 +309,11 @@ export default function App() {
 
   return (
     <main
-      // "deep" y no el atributo pelado. Con el atributo sin valor, Tauri exige
-      // que el click caiga EXACTAMENTE sobre este elemento (`el ===
-      // composedPath[0]`), y como toda la pantalla esta cubierta por hijos -la
-      // sobre-linea, el cronometro, la fila de botones-, arrastrar y el doble
-      // click para maximizar solo funcionaban en los huecos vacios. Con "deep"
-      // vale todo el subarbol.
-      //
-      // Los controles siguen siendo clickeables sin pelear con el arrastre:
-      // Tauri excluye A, BUTTON, INPUT, SELECT, TEXTAREA, LABEL y SUMMARY, mas
-      // cualquier cosa con `role` interactivo -por eso el interruptor lleva
-      // `role="switch"`- o `tabindex`.
-      data-tauri-drag-region="deep"
+      // Sin drag region: a partir de la etapa 4, Foco ocupa el monitor entero
+      // y no se mueve ni se maximiza, asi que arrastrarla no tiene sentido
+      // -solo dejaria una ventana de pantalla completa "flotando" fuera de
+      // lugar-. El drag region con "deep" sigue siendo la solucion correcta
+      // para el Widget, que si es una ventana chica y movible.
       className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden font-sans"
     >
       <Backdrop />

@@ -12,14 +12,53 @@
   "app": {
     "windows": [
       {
-        "label": "main",
+        "label": "foco",
+        "url": "index.html?view=foco",
         "title": "Cairn",
         "width": 1100,
         "height": 760,
-        "minWidth": 880,
-        "minHeight": 620,
         "decorations": false,
-        "maximizable": true
+        "shadow": false,
+        "alwaysOnTop": true,
+        "resizable": false,
+        "maximizable": false,
+        "visible": false
+      },
+      {
+        "label": "widget",
+        "url": "index.html?view=widget",
+        "title": "Cairn · widget",
+        "width": 176,
+        "height": 68,
+        "transparent": true,
+        "decorations": false,
+        "shadow": false,
+        "skipTaskbar": true,
+        "alwaysOnTop": true,
+        "resizable": false,
+        "maximizable": false,
+        "minimizable": false,
+        "focus": false,
+        "visible": false
+      },
+      {
+        "label": "ambient",
+        "url": "index.html?view=ambient",
+        "title": "Cairn · ambiente",
+        "width": 100,
+        "height": 5,
+        "transparent": true,
+        "decorations": false,
+        "shadow": false,
+        "skipTaskbar": true,
+        "alwaysOnTop": true,
+        "resizable": false,
+        "maximizable": false,
+        "minimizable": false,
+        "closable": false,
+        "focus": false,
+        "focusable": false,
+        "visible": false
       }
     ],
     "security": {

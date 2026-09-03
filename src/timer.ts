@@ -6,9 +6,14 @@
 
 // No hay "idle": el ciclo siempre nace corriendo, con la hora de pared real
 // leida en el arranque del core. Ver el comentario de `Phase` en timer.rs.
+// `cycleMs` es el largo NOMINAL del ciclo en curso, que no siempre es el
+// intervalo configurado: posponer 5 min con un intervalo de 45 abre un ciclo de
+// 5. Es lo unico contra lo que se puede medir el avance, y por eso viaja al
+// frontend desde la etapa 4: la barra de Ambiente y el hairline del widget
+// pintan porcentaje de CICLO, no de intervalo.
 export type Phase =
-  | { kind: "running"; deadlineMs: number }
-  | { kind: "paused"; remainingMs: number }
+  | { kind: "running"; deadlineMs: number; cycleMs: number }
+  | { kind: "paused"; remainingMs: number; cycleMs: number }
   | { kind: "elapsed"; sinceMs: number };
 
 export interface TimerSnapshot {
@@ -35,6 +40,40 @@ export function elapsedMs(phase: Phase, nowMs: number): number {
     return Math.max(0, nowMs - phase.sinceMs);
   }
   return 0;
+}
+
+/**
+ * Umbral del ultimo tramo del ciclo: el 10 % final (docs/DESIGN.md §4).
+ *
+ * Es donde la barra de Ambiente engorda de 3 a 5 px y empieza a respirar, y
+ * donde el hairline del widget pasa de 2 a 3 px. Vive aca y no en cada vista
+ * porque las dos tienen que cambiar en el mismo instante.
+ */
+export const FINAL_STRETCH = 0.9;
+
+/**
+ * Avance del ciclo en curso, de 0 a 1, **escalonado de a 1 %**.
+ *
+ * El escalon es del handoff, no una optimizacion: "pasos de 1 % del ancho, sin
+ * easing". Una barra que se mueve continuamente pide que la mires; una que
+ * salta de a un porciento se lee de reojo.
+ *
+ * Se mide contra `cycleMs` y no contra el intervalo configurado por el mismo
+ * motivo por el que Rust lo manda: un posponer de 5 min tiene que llenar la
+ * barra en 5 minutos.
+ */
+export function cycleProgress(phase: Phase, nowMs: number): number {
+  if (phase.kind === "elapsed") {
+    return 1;
+  }
+  // Rust acota los minutos a >= 1 antes de convertirlos, asi que un ciclo de
+  // cero no deberia existir. La guarda esta igual porque es una division.
+  if (phase.cycleMs <= 0) {
+    return 1;
+  }
+  const spent = phase.cycleMs - remainingMs(phase, nowMs);
+  const ratio = spent / phase.cycleMs;
+  return Math.min(1, Math.max(0, Math.floor(ratio * 100) / 100));
 }
 
 /**

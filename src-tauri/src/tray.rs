@@ -10,12 +10,14 @@
 //! Duplicar ese booleano seria el bug clasico: pausas desde la ventana, la
 //! bandeja sigue diciendo "Pausar", la apretas y reanudas sin querer.
 
-use std::sync::Mutex;
-
-use tauri::menu::{Menu, MenuEvent, MenuItem, MenuItemBuilder, PredefinedMenuItem};
+use tauri::menu::{
+    CheckMenuItem, CheckMenuItemBuilder, Menu, MenuEvent, MenuItem, MenuItemBuilder,
+    PredefinedMenuItem,
+};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Manager, Wry};
 
+use crate::modes::{self, Mode};
 use crate::timer::{self, Phase, TimerState};
 
 /// Los ids con los que vuelve el click en `on_menu_event`. Son strings porque
@@ -28,22 +30,24 @@ const ID_TOGGLE: &str = "toggle";
 const ID_SETTINGS: &str = "settings";
 const ID_QUIT: &str = "quit";
 
-const LABEL_MAIN: &str = "main";
-
-/// Lo unico que la bandeja necesita conservar: el handle del item que cambia de
-/// texto. Va en `app.manage()`, el mismo mecanismo por el que viaja el estado
-/// del temporizador, para poder recuperarlo desde cualquier lado con el tipo.
+/// Lo unico que la bandeja necesita conservar: los handles de los items que
+/// cambian solos. Va en `app.manage()`, el mismo mecanismo por el que viaja el
+/// estado del temporizador, para poder recuperarlo desde cualquier lado con el
+/// tipo.
 struct TrayHandles {
     toggle: MenuItem<Wry>,
+    /// Los tres modos, emparejados con el modo que representan. Son
+    /// `CheckMenuItem` y no items comunes porque en Ambiente **no se ve ninguna
+    /// ventana**: sin la marca, la bandeja es el unico lugar donde se puede
+    /// saber en que modo esta la app, y no lo diria.
+    modes: Vec<(Mode, CheckMenuItem<Wry>)>,
 }
 
 /// Arma el icono y el menu. Se llama una vez, desde `setup()`.
-pub fn init(app: &AppHandle, state: TimerState) -> Result<(), Box<dyn std::error::Error>> {
-    // Los tres modos existen ya para fijar la forma del menu, pero llegan
-    // deshabilitados: las ventanas que conmutan son la etapa 4.
-    let focus = MenuItemBuilder::new("Foco").id(ID_MODE_FOCUS).enabled(false).build(app)?;
-    let widget = MenuItemBuilder::new("Widget").id(ID_MODE_WIDGET).enabled(false).build(app)?;
-    let ambient = MenuItemBuilder::new("Ambiente").id(ID_MODE_AMBIENT).enabled(false).build(app)?;
+pub fn init(app: &AppHandle, state: TimerState, mode: Mode) -> Result<(), Box<dyn std::error::Error>> {
+    let focus = mode_item(app, Mode::Focus, ID_MODE_FOCUS, "Foco", mode)?;
+    let widget = mode_item(app, Mode::Widget, ID_MODE_WIDGET, "Widget", mode)?;
+    let ambient = mode_item(app, Mode::Ambient, ID_MODE_AMBIENT, "Ambiente", mode)?;
 
     // El texto real lo pone `sync` al final de esta funcion, contra el estado
     // que ya existe. Aca solo se reserva el ancho.
@@ -80,27 +84,52 @@ pub fn init(app: &AppHandle, state: TimerState) -> Result<(), Box<dyn std::error
         .on_menu_event(on_menu_event)
         .build(app)?;
 
-    app.manage(TrayHandles { toggle });
+    app.manage(TrayHandles {
+        toggle,
+        modes: vec![
+            (Mode::Focus, focus),
+            (Mode::Widget, widget),
+            (Mode::Ambient, ambient),
+        ],
+    });
     sync(app, state);
     Ok(())
 }
 
+fn mode_item(
+    app: &AppHandle,
+    mode: Mode,
+    id: &str,
+    text: &str,
+    current: Mode,
+) -> tauri::Result<CheckMenuItem<Wry>> {
+    CheckMenuItemBuilder::new(text)
+        .id(id)
+        .checked(mode == current)
+        .build(app)
+}
+
 fn on_menu_event(app: &AppHandle, event: MenuEvent) {
     match event.id.as_ref() {
+        ID_MODE_FOCUS => modes::set_mode(app, Mode::Focus),
+        ID_MODE_WIDGET => modes::set_mode(app, Mode::Widget),
+        ID_MODE_AMBIENT => modes::set_mode(app, Mode::Ambient),
         ID_TOGGLE => toggle_pause(app),
-        ID_SETTINGS => show_main(app),
+        // Los ajustes viven adentro de la pantalla de Foco, asi que "Ajustes"
+        // es "traeme Foco". Cambia el modo de verdad -y por lo tanto lo
+        // persiste-: dejar la app mostrando Foco mientras el modo guardado dice
+        // Ambiente seria justo la clase de mentira que la marca del menu existe
+        // para evitar.
+        ID_SETTINGS => modes::set_mode(app, Mode::Focus),
         // La UNICA salida real de la app. Todo lo demas esconde ventanas.
         ID_QUIT => app.exit(0),
-        // Los tres modos estan deshabilitados hasta la etapa 4, asi que este
-        // brazo no deberia recibir nada; que exista evita el panico si algun
-        // dia se habilitan sin tocar este match.
         _ => {}
     }
 }
 
 /// Pausa o reanuda leyendo la fase real del core, no un estado propio.
 fn toggle_pause(app: &AppHandle) {
-    let paused = matches!(current_phase(app), Some(Phase::Paused { .. }));
+    let paused = matches!(timer::current_phase(app), Some(Phase::Paused { .. }));
     // Los comandos de `timer.rs` son funciones de Rust comunes con un atributo
     // encima: se pueden llamar directo desde acá. Emiten y sincronizan solos, asi
     // que la bandeja no tiene que refrescarse a mano despues.
@@ -112,31 +141,6 @@ fn toggle_pause(app: &AppHandle) {
     if let Err(error) = result {
         eprintln!("[cairn] la bandeja no pudo cambiar la pausa: {error}");
     }
-}
-
-fn current_phase(app: &AppHandle) -> Option<Phase> {
-    let state = app.try_state::<Mutex<TimerState>>()?;
-    let guard = state.lock().ok()?;
-    Some(guard.phase)
-}
-
-/// Trae la ventana principal al frente.
-///
-/// El orden `show` -> `unminimize` -> `set_focus` no es negociable (D7): el
-/// `set_focus` de tao arranca con `if is_visible && !is_minimized`, asi que
-/// llamarlo sobre una ventana escondida es un no-op silencioso. Es el bug
-/// clasico de "el .exe se ejecuta de nuevo y no pasa nada".
-///
-/// Nada de Win32 ni `unsafe`: tao ya trae adentro el workaround del ALT
-/// sintetico que Windows necesita para permitir `SetForegroundWindow`.
-pub fn show_main(app: &AppHandle) {
-    let Some(window) = app.get_webview_window(LABEL_MAIN) else {
-        eprintln!("[cairn] no existe la ventana '{LABEL_MAIN}'");
-        return;
-    };
-    log_step("show", window.show());
-    log_step("unminimize", window.unminimize());
-    log_step("set_focus", window.set_focus());
 }
 
 fn log_step(step: &str, result: tauri::Result<()>) {
@@ -173,5 +177,26 @@ pub fn sync(app: &AppHandle, state: TimerState) {
     });
     if let Err(error) = dispatched {
         eprintln!("[cairn] no se pudo despachar la sincronizacion de la bandeja: {error}");
+    }
+}
+
+/// Mueve la marca del menu al modo activo.
+///
+/// La llama `modes::set_mode`, que es el unico lugar donde el modo elegido
+/// cambia. Igual que `sync`, salta al hilo principal antes de tocar los items:
+/// `muda` entra en panico si se los toca desde otro lado.
+pub fn sync_mode(app: &AppHandle, mode: Mode) {
+    let handle = app.clone();
+    let dispatched = app.run_on_main_thread(move || {
+        let Some(handles) = handle.try_state::<TrayHandles>() else {
+            eprintln!("[cairn] la bandeja todavia no esta registrada");
+            return;
+        };
+        for (item_mode, item) in &handles.modes {
+            log_step("set_checked de un modo", item.set_checked(*item_mode == mode));
+        }
+    });
+    if let Err(error) = dispatched {
+        eprintln!("[cairn] no se pudo despachar la marca del modo: {error}");
     }
 }

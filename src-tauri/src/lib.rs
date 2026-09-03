@@ -1,3 +1,4 @@
+mod modes;
 mod settings;
 mod timer;
 mod tray;
@@ -20,7 +21,12 @@ pub fn run() {
         // estaba viva, mas el argv y el cwd de la que se acaba de intentar
         // abrir; nosotros solo usamos el primero.
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
-            tray::show_main(app);
+            // Volver a ejecutar el .exe significa "mostrame la app", y la app
+            // que se puede mostrar es Foco: en Ambiente no hay ninguna ventana
+            // que traer al frente, asi que sin esto el doble click no haria
+            // nada visible. Es un cambio de modo de verdad, con su marca en la
+            // bandeja y su escritura en `store.json`.
+            modes::set_mode(app, modes::Mode::Focus);
         }))
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_notification::init())
@@ -65,29 +71,55 @@ pub fn run() {
             // estrangula los timers de JS en las que estan ocultas.
             app.manage(Mutex::new(state));
 
-            // La bandeja se arma despues del `manage` porque su item de pausa se
-            // pinta contra el estado que acaba de quedar registrado.
-            tray::init(&handle, state)?;
+            // Los modos van despues del `manage` porque colocan y muestran la
+            // ventana que corresponde a la FASE que acaba de quedar registrada:
+            // si la app arrancara vencida, lo que tiene que aparecer es Foco y
+            // no el modo guardado.
+            let mode = modes::init(&handle, &saved, state.phase);
+
+            // La bandeja se arma despues porque su item de pausa se pinta
+            // contra el estado, y su marca de modo contra el modo de arranque.
+            tray::init(&handle, state, mode)?;
             timer::spawn_ticker(handle);
             Ok(())
         })
-        .on_window_event(|window, event| {
+        .on_window_event(|window, event| match event {
             // Cerrar una ventana NO cierra la app (D8): se cancela el cierre y
             // se esconde. La unica salida real es "Salir" en la bandeja.
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+            tauri::WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
                 if let Err(error) = window.hide() {
                     eprintln!("[cairn] no se pudo esconder la ventana: {error}");
                 }
+                if window.label() == modes::Mode::Widget.label() {
+                    modes::persist_widget_pos(window.app_handle());
+                }
             }
+            // El widget se arrastra y tiene que recordar donde quedo. La
+            // posicion se anota en memoria en cada `Moved` -que durante un
+            // arrastre llegan de a decenas por segundo- y baja a disco recien
+            // al esconderlo o al salir. Guardar en cada evento seria una
+            // escritura de `store.json` por pixel arrastrado.
+            tauri::WindowEvent::Moved(position)
+                if window.label() == modes::Mode::Widget.label() =>
+            {
+                modes::remember_widget_move(window.app_handle(), position.x, position.y);
+            }
+            _ => {}
         })
         // `build` + `run` en vez de `.run()` directo: es la unica forma de
         // engancharse a `RunEvent`, que es donde vive el `prevent_exit`.
         .build(tauri::generate_context!())
         .expect("no se pudo iniciar Tauri");
 
-    app.run(|_app, event| {
+    app.run(|app, event| {
         if let tauri::RunEvent::ExitRequested { code, api, .. } = event {
+            // La ultima oportunidad de bajar la posicion del widget a disco: si
+            // el usuario lo arrastro y despues salio por la bandeja sin cambiar
+            // de modo, este es el unico lugar por el que pasa el movimiento.
+            if code.is_some() {
+                modes::persist_widget_pos(app);
+            }
             // Sin este `prevent_exit`, Tauri termina el proceso apenas se
             // esconde la ultima ventana y la bandeja queda huerfana.
             //

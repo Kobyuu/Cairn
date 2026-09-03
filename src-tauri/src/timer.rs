@@ -40,17 +40,20 @@ pub enum Phase {
     ///
     /// `cycle_ms` es cuanto dura ESTE ciclo, que no siempre es el intervalo
     /// configurado: posponer 5 min con un intervalo de 45 abre un ciclo de 5.
-    /// Se guarda porque es la unica cota legitima contra la que se puede medir
-    /// un salto de reloj hacia atras; medir contra el intervalo se comia los
-    /// posponer mas largos que el. No sale al frontend porque todavia nadie lo
-    /// usa — la etapa 6 lo va a querer para el ultimo 10% del ciclo (D6).
-    Running {
-        deadline_ms: u64,
-        #[serde(skip)]
-        cycle_ms: u64,
-    },
+    /// Sirve para dos cosas: es la unica cota legitima contra la que se puede
+    /// medir un salto de reloj hacia atras -medir contra el intervalo se comia
+    /// los posponer mas largos que el-, y desde la etapa 4 es tambien el
+    /// denominador del avance que pintan la franja de Ambiente y el hairline
+    /// del widget. Por eso viaja al frontend.
+    Running { deadline_ms: u64, cycle_ms: u64 },
     /// Congelado: al reanudar el deadline se recalcula desde el "ahora".
-    Paused { remaining_ms: u64 },
+    ///
+    /// Arrastra el `cycle_ms` del ciclo pausado, y no es contabilidad de mas:
+    /// sin el, el avance de la barra no se puede calcular con la ventana en
+    /// pausa (que es justo cuando tiene que quedarse quieta y visible), y al
+    /// reanudar el ciclo nuevo mediria contra el restante, asi que la barra
+    /// volveria a cero despues de cada pausa.
+    Paused { remaining_ms: u64, cycle_ms: u64 },
     /// Vencido. `since_ms` es el instante del vencimiento, no el del aviso:
     /// el cronometro ascendente mide el atraso real (D3).
     Elapsed { since_ms: u64 },
@@ -102,24 +105,33 @@ pub fn advance(phase: Phase, interval_ms: u64, now_ms: u64) -> Phase {
 /// Congela el restante. No hace nada si la fase no estaba corriendo.
 pub fn pause(phase: Phase, now_ms: u64) -> Phase {
     match phase {
-        Phase::Running { deadline_ms, .. } => Phase::Paused {
+        Phase::Running { deadline_ms, cycle_ms } => Phase::Paused {
             remaining_ms: deadline_ms.saturating_sub(now_ms),
+            cycle_ms,
         },
         other => other,
     }
 }
 
-/// Reanuda rebasando el deadline desde `now_ms`.
+/// Reanuda rebasando el deadline desde `now_ms`, **conservando el largo del
+/// ciclo**.
 ///
-/// El ciclo que se reanuda vale lo que le quedaba: si se pospuso 60 min y se
-/// pauso con 50 por delante, el ciclo reanudado dura 50. Alcanza para que el
-/// clamp de `advance` siga teniendo una cota honesta y evita arrastrar el largo
-/// original a traves de `Paused`.
+/// La etapa 2 hacia lo contrario: el ciclo reanudado valia lo que le quedaba,
+/// asi que pausar con 50 min por delante abria un ciclo de 50. Era mas estricto
+/// para el clamp anti-salto-de-reloj y no molestaba a nadie mientras el ciclo
+/// no se dibujaba. Con la barra de Ambiente en pantalla molesta mucho: pausar
+/// al 48 % y reanudar devolvia la barra a cero, porque el denominador cambiaba
+/// abajo del dibujo.
+///
+/// El clamp sigue siendo correcto -el restante nunca supera el ciclo, que es la
+/// invariante que necesita-, solo un poco mas flojo: un salto para atras mas
+/// chico que el rato que estuvo en pausa ya no lo cazaria. Es el precio, y es
+/// barato al lado de una barra que miente.
 pub fn resume(phase: Phase, now_ms: u64) -> Phase {
     match phase {
-        Phase::Paused { remaining_ms } => Phase::Running {
+        Phase::Paused { remaining_ms, cycle_ms } => Phase::Running {
             deadline_ms: now_ms + remaining_ms,
-            cycle_ms: remaining_ms,
+            cycle_ms,
         },
         other => other,
     }
@@ -281,6 +293,11 @@ fn announce(app: &AppHandle, before: Phase, snapshot: TimerState) {
     }
     emit_changed(app, snapshot);
     crate::tray::sync(app, snapshot);
+    // La cuarta vista que hay que sincronizar: cual de las tres ventanas se ve.
+    // Va por el mismo embudo que las otras tres para que no puedan discrepar —
+    // que la ventana de Foco aparezca en el mismo instante en que la bandeja se
+    // entera del vencimiento, y no un tick despues.
+    crate::modes::sync(app, snapshot.phase);
 }
 
 /// La notificacion nativa de Windows al vencer.
@@ -317,6 +334,19 @@ fn emit_changed(app: &AppHandle, snapshot: TimerState) {
     if let Err(error) = app.emit(EVENT_CHANGED, snapshot) {
         eprintln!("[cairn] no se pudo emitir {EVENT_CHANGED}: {error}");
     }
+}
+
+/// La fase actual, para quien necesite decidir algo contra ella sin quedarse
+/// con el candado en la mano. Devuelve `None` si el estado todavia no existe o
+/// si el candado quedo envenenado.
+///
+/// Existe para que la bandeja y los modos no dupliquen el `lock()`: las dos
+/// tienen que leer la fase de verdad -no un booleano propio- justo antes de
+/// actuar, y las dos tienen que soltarla enseguida.
+pub fn current_phase(app: &AppHandle) -> Option<Phase> {
+    let state = app.try_state::<Mutex<TimerState>>()?;
+    let guard = state.lock().ok()?;
+    Some(guard.phase)
 }
 
 /// Lectura pura del estado, para que una ventana recien montada se sincronice.
@@ -394,6 +424,13 @@ pub fn timer_set_quick_snooze(app: AppHandle, minutes: u64) -> Result<TimerState
 pub fn spawn_ticker(app: AppHandle) {
     std::thread::spawn(move || loop {
         std::thread::sleep(Duration::from_secs(1));
+
+        // Va ANTES de tomar el candado, y no es un detalle de estilo: adentro
+        // se le pregunta al hilo principal por el monitor primario y se espera
+        // la respuesta. Con el candado tomado, un click que llegara en ese
+        // instante -que necesita el mismo candado- dejaria a los dos hilos
+        // esperandose para siempre. Ver la cabecera de `modes.rs`.
+        crate::modes::keep_aligned(&app);
 
         let now = now_ms();
         // Si el ticker muere, el temporizador se congela para siempre y nadie
@@ -531,16 +568,36 @@ mod tests {
         let phase = Phase::Running { deadline_ms: T0 + INTERVAL, cycle_ms: INTERVAL };
         assert_eq!(
             pause(phase, T0 + 10 * MIN),
-            Phase::Paused { remaining_ms: 35 * MIN }
+            Phase::Paused { remaining_ms: 35 * MIN, cycle_ms: INTERVAL }
         );
     }
 
     #[test]
-    fn resume_rebases_deadline() {
-        let phase = Phase::Paused { remaining_ms: 35 * MIN };
+    fn resume_rebases_deadline_without_shrinking_the_cycle() {
+        // El largo del ciclo sobrevive a la pausa: es lo que hace que la barra
+        // de Ambiente siga desde donde estaba en vez de volver a cero.
+        let phase = Phase::Paused { remaining_ms: 35 * MIN, cycle_ms: INTERVAL };
         assert_eq!(
             resume(phase, T0),
-            Phase::Running { deadline_ms: T0 + 35 * MIN, cycle_ms: 35 * MIN }
+            Phase::Running { deadline_ms: T0 + 35 * MIN, cycle_ms: INTERVAL }
+        );
+    }
+
+    #[test]
+    fn a_pause_and_resume_round_trip_keeps_the_cycle_length() {
+        // El viaje completo, que es como se rompe en la vida real: arrancar,
+        // pausar a los 10 min, reanudar 3 h despues. El restante se conserva y
+        // el ciclo sigue midiendo lo mismo, asi que el avance dibujado no salta.
+        let started = restart(INTERVAL, T0);
+        let paused = pause(started, T0 + 10 * MIN);
+        let resumed = resume(paused, T0 + 3 * 60 * MIN);
+
+        assert_eq!(
+            resumed,
+            Phase::Running {
+                deadline_ms: T0 + 3 * 60 * MIN + 35 * MIN,
+                cycle_ms: INTERVAL,
+            }
         );
     }
 
@@ -594,7 +651,7 @@ mod tests {
 
     #[test]
     fn paused_does_not_expire() {
-        let phase = Phase::Paused { remaining_ms: 35 * MIN };
+        let phase = Phase::Paused { remaining_ms: 35 * MIN, cycle_ms: INTERVAL };
         assert_eq!(advance(phase, INTERVAL, T0 + 10 * INTERVAL), phase);
     }
 
@@ -624,15 +681,22 @@ mod tests {
         assert_eq!(
             json,
             serde_json::json!({
-                "phase": { "kind": "running", "deadlineMs": T0 },
+                "phase": { "kind": "running", "deadlineMs": T0, "cycleMs": INTERVAL },
                 "intervalMs": INTERVAL,
                 "quickSnoozeMs": 5 * MIN,
             })
         );
 
-        let paused = serde_json::to_value(Phase::Paused { remaining_ms: MIN })
+        // `cycleMs` sale en las dos fases que lo tienen: es el denominador del
+        // avance que dibujan Ambiente y el widget, y hasta la etapa 4 estaba
+        // marcado `serde(skip)`. Si alguien lo vuelve a saltear, la barra se
+        // queda clavada en cero y nada mas se rompe: por eso esta clavado aca.
+        let paused = serde_json::to_value(Phase::Paused { remaining_ms: MIN, cycle_ms: INTERVAL })
             .expect("paused tiene que serializar");
-        assert_eq!(paused, serde_json::json!({ "kind": "paused", "remainingMs": MIN }));
+        assert_eq!(
+            paused,
+            serde_json::json!({ "kind": "paused", "remainingMs": MIN, "cycleMs": INTERVAL })
+        );
 
         let elapsed =
             serde_json::to_value(Phase::Elapsed { since_ms: T0 }).expect("elapsed serializa");
