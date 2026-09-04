@@ -62,7 +62,7 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; connect-src 'self' http://ipc.localhost; script-src 'self'; style-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'"
     }
   },
   "bundle": {
