@@ -1,0 +1,101 @@
+<!doctype html>
+<!-- Fuente de la imagen de OG (1200 × 630). Se abre en un navegador con el
+     viewport en 1200 × 630, se captura y sale img/og.png.
+     NO se publica: está excluida en .vercelignore y en robots.txt. Servida
+     saldría sin estilos igual, porque la CSP de vercel.json no permite <style>
+     en línea. -->
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Cairn — OG</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300&family=IBM+Plex+Mono:wght@400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=1" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+
+      .og {
+        width: 1200px;
+        height: 630px;
+        background: var(--bg);
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 64px;
+        box-sizing: border-box;
+      }
+
+      .og__bar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 62%;
+        height: 3px;
+        background: var(--accent-bar);
+      }
+
+      .og__halo {
+        position: absolute;
+        left: 62%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 820px;
+        height: 820px;
+        border-radius: 50%;
+        background: radial-gradient(circle, var(--halo) 0%, transparent 62%);
+      }
+
+      .og__top {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        position: relative;
+      }
+
+      .og__title {
+        font-size: 56px;
+        max-width: 900px;
+        position: relative;
+        margin: 0;
+      }
+
+      .og__foot {
+        display: flex;
+        align-items: baseline;
+        gap: 20px;
+        position: relative;
+        font-size: 13px;
+        letter-spacing: 0.14em;
+        color: var(--ink-34);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="og">
+      <span class="og__bar"></span>
+      <span class="og__halo"></span>
+
+      <div class="og__top">
+        <span class="cairn-mark cairn-mark--lg"><i></i><i></i><i></i></span>
+        <span class="wordmark" style="font-size: 34px">Cairn</span>
+      </div>
+
+      <h1 class="h1 og__title">Cada 45 minutos, una pausa que te espera.</h1>
+
+      <p class="og__foot">
+        <span>TEMPORIZADOR DE PAUSAS PARA WINDOWS</span>
+        <span>·</span>
+        <span>SIN CUENTA · SIN CONEXIÓN</span>
+      </p>
+    </div>
+  </body>
+</html>

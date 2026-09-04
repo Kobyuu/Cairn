@@ -1,0 +1,440 @@
+<!doctype html>
+<!--
+  Cairn — landing pública. Issue #3.
+  Sin build, sin JavaScript propio, sin analítica. La única llamada saliente
+  son las fuentes de Google (permitido en la web, prohibido en la app).
+
+  DOMINIO: cairn.app es un marcador. Si el dominio final es otro, buscar
+  "cairn.app" en TODO site/ — son seis lugares en tres archivos: canonical,
+  og:url, og:image y el JSON-LD acá; la linea Sitemap: de robots.txt; y el
+  <loc> de sitemap.xml.
+-->
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Cairn — temporizador de pausas para Windows</title>
+    <meta
+      name="description"
+      content="Un aviso cada 45 minutos que no vuelve a contar hasta que confirmás. Tres modos, uno de ellos casi invisible."
+    />
+    <link rel="canonical" href="https://cairn.app/" />
+    <meta name="theme-color" content="#0B0C0B" />
+    <meta name="color-scheme" content="dark" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Cairn" />
+    <meta property="og:locale" content="es_AR" />
+    <meta property="og:url" content="https://cairn.app/" />
+    <meta property="og:title" content="Cairn — temporizador de pausas para Windows" />
+    <meta
+      property="og:description"
+      content="Un aviso cada 45 minutos que no vuelve a contar hasta que confirmás. Tres modos, uno de ellos casi invisible."
+    />
+    <meta property="og:image" content="https://cairn.app/img/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Cairn. Cada 45 minutos, una pausa que te espera."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" href="img/cairn-32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="img/cairn.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="img/cairn-256.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300&family=IBM+Plex+Mono:wght@300;400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=1" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Cairn",
+        "url": "https://cairn.app/",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Windows 10, Windows 11",
+        "inLanguage": "es",
+        "description": "Temporizador de pausas para Windows. Avisa cuándo parar y no vuelve a contar hasta que confirmás que terminaste."
+      }
+    </script>
+  </head>
+
+  <body>
+    <!-- El producto funcionando sobre su propia web. Nunca se anima. -->
+    <div class="ambient-bar" aria-hidden="true"></div>
+
+    <header class="wrap nav">
+      <span class="cairn-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="wordmark">Cairn</span>
+      <nav class="nav__links" aria-label="Secciones">
+        <a href="#modos">MODOS</a>
+        <a href="#preguntas">PREGUNTAS</a>
+        <button class="btn btn--sm btn--soon" type="button" disabled>
+          PRÓXIMAMENTE
+        </button>
+      </nav>
+    </header>
+
+    <main>
+      <!-- ── 1 · HÉROE ─────────────────────────────────────────────────── -->
+      <section class="wrap hero">
+        <div class="hero__wash" aria-hidden="true"></div>
+
+        <p class="label">TEMPORIZADOR DE PAUSAS · WINDOWS</p>
+        <h1 class="display hero__title">Cada 45 minutos, una pausa que te espera.</h1>
+        <p class="body hero__sub">
+          Cairn te avisa cuándo parar y no vuelve a contar hasta que confirmás que
+          terminaste. El resto del día es una barra de tres píxeles.
+        </p>
+
+        <div class="hero__actions">
+          <button class="btn btn--soon" type="button" disabled>PRÓXIMAMENTE</button>
+          <a class="btn btn--ghost" href="#modos">VER CÓMO FUNCIONA</a>
+        </div>
+        <p class="note hero__meta">Windows 10 y 11 · sin cuenta · sin conexión</p>
+
+        <!-- Marco A -->
+        <div class="frame-a">
+            <img
+              class="shot"
+              src="img/foco.png"
+              width="1920"
+              height="1080"
+              fetchpriority="high"
+              alt="Cairn en modo Foco a pantalla completa: el título de la rutina arriba, la leyenda «llevás en pausa» y el cronómetro en 01:24, con los botones Listo, posponer 5 y ver rutina."
+            />
+        </div>
+      </section>
+
+      <!-- ── 2 · LOS TRES MODOS ────────────────────────────────────────── -->
+      <section class="wrap section" id="modos">
+        <div class="section__head">
+          <div>
+            <p class="label">01 · TRES MODOS</p>
+            <h2 class="h1 section__title">Tan presente como quieras que sea.</h2>
+          </div>
+          <p class="body">
+            El mismo ciclo se muestra de tres formas. Cambiás de modo cuando querés
+            y el conteo sigue exactamente donde estaba.
+          </p>
+        </div>
+
+        <!-- Ambiente · marco C -->
+        <div class="mode">
+          <div class="mode__text">
+            <p class="label label--accent">AMBIENTE</p>
+            <h3 class="h2">Tres píxeles y nada más</h3>
+            <p class="body">
+              Una barra pegada al borde superior de la pantalla que se llena a lo
+              largo del ciclo. Sin ventana, sin texto, sin sonido. Cuando falta poco,
+              engorda a cinco píxeles y respira.
+            </p>
+          </div>
+          <div class="strips">
+            <figure class="strip">
+                <img
+                  src="img/ambiente-18.png"
+                  width="1920"
+                  height="260"
+                  loading="lazy"
+                  decoding="async"
+                  alt="Borde superior de la pantalla con la barra de Ambiente de 3 píxeles llenada al 18 por ciento."
+                />
+              <figcaption>
+                <span class="strip__label">empieza el ciclo</span>
+                <span class="strip__meta num">3 PX · 18%</span>
+              </figcaption>
+            </figure>
+            <figure class="strip">
+                <img
+                  src="img/ambiente-62.png"
+                  width="1920"
+                  height="260"
+                  loading="lazy"
+                  decoding="async"
+                  alt="La misma barra de Ambiente llenada al 62 por ciento, ya pasada la mitad del ciclo."
+                />
+              <figcaption>
+                <span class="strip__label">va por la mitad</span>
+                <span class="strip__meta num">3 PX · 62%</span>
+              </figcaption>
+            </figure>
+            <figure class="strip">
+                <img
+                  src="img/ambiente-93.png"
+                  width="1920"
+                  height="260"
+                  loading="lazy"
+                  decoding="async"
+                  alt="La barra de Ambiente al 93 por ciento, ya engrosada a cinco píxeles porque falta poco."
+                />
+              <figcaption>
+                <span class="strip__label">falta poco: la barra respira</span>
+                <span class="strip__meta num">5 PX · 93%</span>
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+
+        <!-- Widget · marco B -->
+        <div class="mode mode--flip">
+          <div class="mode__shot">
+              <img
+                class="shot shot--s"
+                src="img/widget.png"
+                width="1276"
+                height="636"
+                loading="lazy"
+                decoding="async"
+                alt="Recorte de un escritorio con una ventana de trabajo abierta y el widget de Cairn en la esquina inferior derecha, marcando 27 minutos restantes."
+              />
+          </div>
+          <div class="mode__text">
+            <p class="label label--accent">WIDGET</p>
+            <h3 class="h2">El número, de reojo</h3>
+            <p class="body">
+              Una ventana chica sin bordes, siempre encima, que arrastrás donde
+              quieras. Muestra los minutos que faltan. Al pasar el mouse aparecen
+              pausar y cambiar de modo, y nada más.
+            </p>
+          </div>
+        </div>
+
+        <!-- Foco -->
+        <div class="mode">
+          <div class="mode__text">
+            <p class="label label--accent">FOCO</p>
+            <h3 class="h2">La pantalla completa, sin sobresalto</h3>
+            <p class="body">
+              Aparece cuando se cumple el intervalo, con un cronómetro que cuenta
+              cuánto llevás en la pausa. Los halos respiran a cinco segundos y medio
+              por ciclo: el mismo ritmo que una respiración lenta.
+            </p>
+          </div>
+          <div class="mode__shot">
+              <img
+                class="shot shot--s"
+                src="img/foco.png"
+                width="1920"
+                height="1080"
+                loading="lazy"
+                decoding="async"
+                alt="Modo Foco: el cronómetro en 01:24 con los halos que respiran alrededor."
+              />
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 3 · EL CICLO ──────────────────────────────────────────────── -->
+      <section class="wrap section">
+        <p class="label">02 · EL CICLO</p>
+        <h2 class="h1 section__title">Vuelve a contar cuando vos decís.</h2>
+
+        <div class="cycle">
+          <ol class="cycle__steps">
+            <li class="cycle__step">
+              <span class="cycle__rail" aria-hidden="true">
+                <span class="cycle__dot"></span><span class="cycle__line"></span>
+              </span>
+              <div class="cycle__body">
+                <p class="label num">01</p>
+                <h3 class="h3">Contando</h3>
+                <p class="body">
+                  El intervalo corre en el modo que elijas. Ambiente por defecto.
+                </p>
+              </div>
+            </li>
+            <li class="cycle__step">
+              <span class="cycle__rail" aria-hidden="true">
+                <span class="cycle__dot"></span><span class="cycle__line"></span>
+              </span>
+              <div class="cycle__body">
+                <p class="label num">02</p>
+                <h3 class="h3">Aviso</h3>
+                <p class="body">
+                  Se cumple el intervalo y aparece Foco, con la rutina a un click.
+                </p>
+              </div>
+            </li>
+            <li class="cycle__step">
+              <span class="cycle__rail" aria-hidden="true">
+                <span class="cycle__dot"></span><span class="cycle__line"></span>
+              </span>
+              <div class="cycle__body">
+                <p class="label num">03</p>
+                <h3 class="h3">Tu pausa</h3>
+                <p class="body">
+                  El cronómetro cuenta hacia arriba. Dura lo que tenga que durar.
+                </p>
+              </div>
+            </li>
+            <li class="cycle__step cycle__step--last">
+              <span class="cycle__rail" aria-hidden="true">
+                <span class="cycle__dot"></span><span class="cycle__line"></span>
+              </span>
+              <div class="cycle__body">
+                <p class="label num">04</p>
+                <h3 class="h3">Confirmás</h3>
+                <p class="body">
+                  Apretás Listo. Recién ahí el intervalo vuelve a cero.
+                </p>
+              </div>
+            </li>
+          </ol>
+          <p class="cycle__back">
+            <span class="label">↩ SÓLO DESDE ACÁ VUELVE AL PRINCIPIO</span>
+            <span aria-hidden="true"></span>
+          </p>
+        </div>
+      </section>
+
+      <!-- ── 4 · LA RUTINA ─────────────────────────────────────────────── -->
+      <section class="wrap section">
+        <div class="section__head">
+          <div>
+            <p class="label">03 · LA RUTINA</p>
+            <h2 class="h1 section__title">Un archivo de texto que es tuyo.</h2>
+          </div>
+          <p class="body">
+            Markdown: títulos, listas, casillas. Cairn lo muestra grande y legible a
+            distancia de brazo mientras te movés. Si ya te la sabés, el panel queda
+            cerrado y apretás Listo.
+          </p>
+        </div>
+
+        <div class="routine">
+          <figure class="routine__read">
+              <img
+                class="shot shot--s"
+                src="img/rutina-lectura.png"
+                width="940"
+                height="588"
+                loading="lazy"
+                decoding="async"
+                alt="Panel de rutina en lectura: el título CUELLO y tres pasos con casillas, dos ya tachados, en tipografía grande."
+              />
+            <figcaption>LECTURA · TEXTO GRANDE PARA SEGUIR MIENTRAS TE MOVÉS</figcaption>
+          </figure>
+          <figure class="routine__edit">
+              <img
+                class="shot shot--s"
+                src="img/rutina-edicion.png"
+                width="940"
+                height="790"
+                loading="lazy"
+                decoding="async"
+                alt="El mismo panel en modo edición, mostrando el markdown crudo con sus números de línea."
+              />
+            <figcaption>
+              EDICIÓN · CTRL+S GUARDA<br />EL ARCHIVO VIVE EN TU CARPETA DE DOCUMENTOS
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- ── 5 · LAS TRES RAZONES ──────────────────────────────────────── -->
+      <section class="wrap section">
+        <h2 class="label">04 · POR QUÉ ESTA Y NO OTRA</h2>
+        <div class="reasons">
+          <article class="card">
+            <p class="label num">01</p>
+            <h3 class="h3">No te apura</h3>
+            <p class="body">
+              El ciclo no vuelve a contar hasta que confirmás. Si la pausa dura diez
+              minutos, dura diez minutos, y nada se pierde por eso.
+            </p>
+          </article>
+          <article class="card">
+            <p class="label num">02</p>
+            <h3 class="h3">Se vuelve casi invisible</h3>
+            <p class="body">
+              Una barra de tres píxeles en el borde de la pantalla comunica todo el
+              avance sin una sola palabra. Sin ícono que titile, sin sonido, sin globo
+              de notificación.
+            </p>
+          </article>
+          <article class="card">
+            <p class="label num">03</p>
+            <h3 class="h3">La rutina es tuya</h3>
+            <p class="body">
+              Un markdown que editás vos y que vive en tu disco. Cairn no decide qué
+              ejercicios hacés ni te vende un programa.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <!-- ── 6 · PREGUNTAS ─────────────────────────────────────────────── -->
+      <section class="wrap section" id="preguntas">
+        <h2 class="label">05 · PREGUNTAS</h2>
+        <div class="faq">
+          <details name="faq" open>
+            <summary>¿Funciona sin internet?</summary>
+            <p>Sí, siempre. No hay cuenta ni servidor: todo pasa en tu máquina.</p>
+          </details>
+          <details name="faq">
+            <summary>¿Sirve para algo que no sea estirar?</summary>
+            <p>
+              Sí. La rutina es un documento libre: ejercicios, tomar agua, mirar lejos,
+              revisar una lista de pendientes.
+            </p>
+          </details>
+          <details name="faq">
+            <summary>¿Qué pasa si estoy en una reunión?</summary>
+            <p>
+              Posponés cinco minutos con un click, o los minutos que quieras desde el
+              mismo botón.
+            </p>
+          </details>
+          <details name="faq">
+            <summary>¿Hay versión para Mac o Linux?</summary>
+            <p>No todavía. Por ahora Cairn es sólo para Windows 10 y 11.</p>
+          </details>
+          <details name="faq">
+            <summary>¿Dónde se guarda mi rutina?</summary>
+            <p>
+              En un archivo markdown en tu carpeta de documentos. Podés abrirlo,
+              editarlo o versionarlo con git.
+            </p>
+          </details>
+        </div>
+      </section>
+
+      <!-- ── 7 · CIERRE ────────────────────────────────────────────────── -->
+      <section class="wrap section closing">
+        <div class="closing__halo" aria-hidden="true"></div>
+        <span class="cairn-mark cairn-mark--lg" aria-hidden="true"
+          ><i></i><i></i><i></i
+        ></span>
+        <h2 class="h1">La próxima pausa puede esperarte.</h2>
+        <div class="hero__actions">
+          <button class="btn btn--soon" type="button" disabled>PRÓXIMAMENTE</button>
+        </div>
+        <p class="note">Windows 10 y 11 · sin cuenta · sin conexión</p>
+      </section>
+    </main>
+
+    <!-- ── 8 · PIE ───────────────────────────────────────────────────── -->
+    <footer class="wrap footer">
+      <div class="footer__inner">
+        <div class="footer__brand">
+          <span class="cairn-mark cairn-mark--sm" aria-hidden="true"
+            ><i></i><i></i><i></i
+          ></span>
+          <span class="wordmark">Cairn</span>
+        </div>
+        <nav class="footer__links" aria-label="Enlaces del pie">
+          <a href="https://github.com/Kobyuu/Cairn">CÓDIGO</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

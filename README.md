@@ -7,16 +7,19 @@ pomodoro o para cronometrar cualquier otra cosa.
 
 Nació para una rutina de corrección de postura.
 
-> **Estado: en diseño.** Todavía no hay código. Las decisiones de arquitectura y
-> las specs por etapa están escritas; la etapa 1 arranca cuando estén instalados
-> los prerrequisitos de abajo.
+> **Estado: la app está completa.** Las seis etapas del capability map están
+> cerradas: temporizador, bandeja, los tres modos de presencia, la rutina en
+> markdown y el diseño aplicado. Todavía no hay distribución — no hay instalador
+> ni release ([#16](https://github.com/Kobyuu/Cairn/issues/16)), así que por
+> ahora se corre desde el código.
 
 ## Cómo funciona
 
-Un temporizador corre en segundo plano. Al vencer, Cairn manda una notificación
-de Windows y conmuta a la pantalla de **Foco**, donde un cronómetro cuenta hacia
-arriba para medir cuánto duró la pausa. Desde ahí: **Listo** (reinicia el ciclo),
-**posponer** los minutos rápidos, o posponer una cantidad arbitraria.
+Un temporizador corre en segundo plano. Al vencer, Cairn conmuta a la pantalla
+de **Foco** —que *es* el aviso: no hay toast del sistema encima— donde un
+cronómetro cuenta hacia arriba para medir cuánto duró la pausa. Desde ahí:
+**Listo** (reinicia el ciclo), **posponer** los minutos rápidos, o posponer una
+cantidad arbitraria.
 
 ### Tres modos de presencia, intercambiables desde la bandeja
 
@@ -91,6 +94,9 @@ cargo test  --manifest-path src-tauri/Cargo.toml
 4. **`presence-modes`** — los tres modos y la conmutación
 5. **`routine`** — la rutina en markdown
 6. **`visual-design`** — el handoff aplicado
+
+Fuera del capability map, porque es otro producto: la **landing pública** en
+[`site/`](site/) — HTML plano sin build, se publica sirviendo esa carpeta.
 
 Después: la rutina crece hacia un espacio de notas, tareas y recordatorios en
 markdown, estilo Notion pero mínimo.

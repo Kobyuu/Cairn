@@ -247,12 +247,21 @@ Lo que hay que saber antes de implementarla:
   En producción se reemplazan por PNG/WebP a 2× exportados de la app real,
   respetando los marcos del kit. Los halos y el grano de esas maquetas existen
   solo para poder revisar la página sin la app compilada.
-- **Responsive:** resuelto a 1240 px. Cortes en 1024 / 900 / 700. Por debajo de
-  700 la captura de Foco se escala con `transform: scale()` desde el centro y
-  **no se reflowea**; mantiene `aspect-ratio:16/10` en todos los anchos.
-- **Estado:** casi nada. `abierta` (índice del acordeón, `-1` = todas cerradas,
-  arranca en 0) y el cronómetro de la maqueta. El contenido (`razones`, `ciclo`,
-  `faq`, `incluye`, `tiras`, `pasos`) va en datos, **no en el markup**.
+- **Responsive:** resuelto a 1240 px. Cortes en 1024 / 900 / 700 (más uno en 480
+  para la nav). La captura de Foco se escala con el ancho y **no se reflowea**:
+  siendo una imagen real, `width:100%` con `height:auto` ya conserva su relación
+  de aspecto sin `transform`. La relación es la de la pantalla capturada (16/9),
+  no 16/10: recortar a 16/10 comía el título de la rutina.
+- **Estado:** ninguno. El acordeón de preguntas es `<details name="faq">`
+  nativo —abre una y cierra las demás sin JavaScript— y el cronómetro `01:24`
+  es parte de la captura, no un contador vivo.
+
+  > La versión previa de esta línea pedía que el contenido (`razones`, `ciclo`,
+  > `faq`, `tiras`, `pasos`) fuera **datos y no markup**. Eso describía el
+  > prototipo, que es un componente con estado. La landing implementada es HTML
+  > plano: cumplirlo obligaría a renderizar el texto por JavaScript, y una
+  > página cuyo argumento es «no hay servidor» no puede depender de JS para
+  > mostrar lo que dice. **En la implementación el markup es los datos.**
 - La barra de Ambiente fija de 3 px arriba de la página es el producto
   funcionando sobre su propia web. **Nunca se anima.**
 - Fondo `#0B0C0B` en toda la página: **no hay secciones claras**.
@@ -281,7 +290,7 @@ El trabajo está seguido en el issue [#3](https://github.com/Kobyuu/Cairn/issues
 | Rutina                         | **Hecho** en `src/views/Routine.tsx` (lectura renderizada y edición en `<textarea>`); falta la lámina de referencia, que es contenido del usuario |
 | Widget · Ambiente              | **Hecho** en `src/views/Widget.tsx` y `src/views/Ambient.tsx` (ver abajo lo omitido) |
 | Fuentes empaquetadas           | **Hecho** — Newsreader Variable (eje `opsz`) + IBM Plex Mono 400 |
-| Landing                        | Issue #3                                                      |
+| Landing                        | **Hecha** en `site/` — HTML plano, sin build (issue #3)        |
 
 **Foco sigue cubriendo las tres fases, y es a propósito.** El handoff lo dibuja
 en su estado vencido (`llevás en pausa` + cronómetro ascendente). Ahora que
