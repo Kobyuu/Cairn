@@ -1,0 +1,4 @@
+# og.html es la fuente de img/og.png: se abre en el navegador para capturarla y
+# no tiene por que estar publicada. Ademas la CSP de vercel.json prohibe estilos
+# en linea, asi que servida saldria sin diseno.
+site/og.html
