@@ -329,13 +329,22 @@ ciclo. Confirma igual que el `LISTO` de Foco: reinicia y deja la rutina limpia
 
 **No hay notificación del sistema, y es una decisión.** La etapa 3 levantaba un
 toast de Windows al vencer, con `tauri-plugin-notification`. Salió en la etapa 6
-por dos razones que se suman: aparece en el **mismo instante** en que Foco tapa
+por dos razones que se sumaban: aparece en el **mismo instante** en que Foco tapa
 el monitor entero, así que es un aviso encima del aviso; y sin instalador que
-registre el `AppUserModelID` de la app (CLAUDE.md §4: todavía no hay), Windows
-lo emite con la identidad de PowerShell. El aviso de Cairn **es** la pantalla de
-Foco, más el tono de `sound.ts` si está encendido. Un toast propio sólo tendría
-sentido como *alternativa* a que Foco tome la pantalla —"avisar sin taparte"—, y
-eso es una decisión de producto, no un cambio de piel.
+registrara el `AppUserModelID` de la app, Windows lo emitía con la identidad de
+PowerShell.
+
+**La segunda razón ya no corre.** Desde el issue #16 hay instalador NSIS, y el
+bundler escribe `PKEY_AppUserModel_ID` con el valor de `com.kobyuu.cairn` en los
+accesos directos del menú Inicio y del escritorio (verificado en
+`installer.nsi:949,952,976`). O sea: **un toast con la identidad de Cairn ya es
+posible.** Ver `docs/specs/SPEC-distribution.md` §5.
+
+Queda en pie la primera, que era la de fondo: el aviso de Cairn **es** la
+pantalla de Foco, más el tono de `sound.ts` si está encendido, y un toast encima
+sería redundante. Un toast propio sólo tendría sentido como *alternativa* a que
+Foco tome la pantalla —"avisar sin taparte"—, y eso sigue siendo una decisión de
+producto abierta, no un cambio de piel.
 
 **Lo que cerró la etapa 6:** el selector de tema (tres chips, el comando
 `settings_set_theme` y la aplicación a las tres ventanas por el evento

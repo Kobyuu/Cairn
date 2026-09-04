@@ -62,7 +62,14 @@
         "applicationCategory": "UtilitiesApplication",
         "operatingSystem": "Windows 10, Windows 11",
         "inLanguage": "es",
-        "description": "Temporizador de pausas para Windows. Avisa cuándo parar y no vuelve a contar hasta que confirmás que terminaste."
+        "description": "Temporizador de pausas para Windows. Avisa cuándo parar y no vuelve a contar hasta que confirmás que terminaste.",
+        "softwareVersion": "0.1.0",
+        "downloadUrl": "https://github.com/Kobyuu/Cairn/releases/download/v0.1.0/Cairn_0.1.0_x64-setup.exe",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
       }
     </script>
   </head>
@@ -77,9 +84,9 @@
       <nav class="nav__links" aria-label="Secciones">
         <a href="#modos">MODOS</a>
         <a href="#preguntas">PREGUNTAS</a>
-        <button class="btn btn--sm btn--soon" type="button" disabled>
-          PRÓXIMAMENTE
-        </button>
+        <a class="btn btn--sm" href="https://github.com/Kobyuu/Cairn/releases/download/v0.1.0/Cairn_0.1.0_x64-setup.exe">
+          DESCARGAR
+        </a>
       </nav>
     </header>
 
@@ -96,10 +103,22 @@
         </p>
 
         <div class="hero__actions">
-          <button class="btn btn--soon" type="button" disabled>PRÓXIMAMENTE</button>
+          <a class="btn" href="https://github.com/Kobyuu/Cairn/releases/download/v0.1.0/Cairn_0.1.0_x64-setup.exe">
+            DESCARGAR PARA WINDOWS
+          </a>
           <a class="btn btn--ghost" href="#modos">VER CÓMO FUNCIONA</a>
         </div>
-        <p class="note hero__meta">Windows 10 y 11 · sin cuenta · sin conexión</p>
+        <p class="note hero__meta">
+          Windows 10 y 11 · <span class="num">2,7</span> MB · gratis · sin
+          cuenta · sin conexión
+        </p>
+        <!-- Sin firma de código: un certificado sale más por año que lo que la
+             app pide. Se avisa antes del clic, no después. -->
+        <p class="note hero__warn">
+          Windows va a avisarte que no reconoce al editor, porque Cairn no está
+          firmado. Es Más información →
+          <span class="nowrap">Ejecutar de todas formas</span>.
+        </p>
 
         <!-- Marco A -->
         <div class="frame-a">
@@ -416,9 +435,14 @@
         ></span>
         <h2 class="h1">La próxima pausa puede esperarte.</h2>
         <div class="hero__actions">
-          <button class="btn btn--soon" type="button" disabled>PRÓXIMAMENTE</button>
+          <a class="btn" href="https://github.com/Kobyuu/Cairn/releases/download/v0.1.0/Cairn_0.1.0_x64-setup.exe">
+            DESCARGAR PARA WINDOWS
+          </a>
         </div>
-        <p class="note">Windows 10 y 11 · sin cuenta · sin conexión</p>
+        <p class="note">
+          Windows 10 y 11 · <span class="num">2,7</span> MB · gratis · sin
+          cuenta · sin conexión
+        </p>
       </section>
     </main>
 
@@ -433,6 +457,8 @@
         </div>
         <nav class="footer__links" aria-label="Enlaces del pie">
           <a href="https://github.com/Kobyuu/Cairn">CÓDIGO</a>
+          <a href="https://github.com/Kobyuu/Cairn/releases">NOVEDADES</a>
+          <a href="https://ko-fi.com/kobyuu">INVITAME UN CAFÉ</a>
         </nav>
       </div>
     </footer>

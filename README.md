@@ -7,11 +7,14 @@ pomodoro o para cronometrar cualquier otra cosa.
 
 Nació para una rutina de corrección de postura.
 
-> **Estado: la app está completa.** Las seis etapas del capability map están
-> cerradas: temporizador, bandeja, los tres modos de presencia, la rutina en
-> markdown y el diseño aplicado. Todavía no hay distribución — no hay instalador
-> ni release ([#16](https://github.com/Kobyuu/Cairn/issues/16)), así que por
-> ahora se corre desde el código.
+> **Estado: la app está completa y se distribuye.** Las seis etapas del
+> capability map están cerradas: temporizador, bandeja, los tres modos de
+> presencia, la rutina en markdown y el diseño aplicado. Hay instalador NSIS y
+> release versionado ([#16](https://github.com/Kobyuu/Cairn/issues/16)) — se
+> baja de [Releases](https://github.com/Kobyuu/Cairn/releases). No está firmado,
+> así que Windows avisa que no reconoce al editor: **Más información → Ejecutar
+> de todas formas**. El porqué está en
+> [`docs/specs/SPEC-distribution.md`](docs/specs/SPEC-distribution.md) §4.
 
 ## Cómo funciona
 

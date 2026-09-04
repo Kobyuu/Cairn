@@ -36,7 +36,11 @@ Este documento contiene las reglas **inquebrantables** del proyecto **Cairn** �
   - **MSVC Build Tools** (Visual Studio Build Tools con la carga "Desarrollo para el escritorio con C++"). Tauri linkea con el linker de MSVC, no con GNU.
   - **WebView2 Runtime** — ya presente en Windows 11 moderno.
 - **Comandos:** `pnpm tauri dev` para desarrollo; `pnpm tauri build` produce el `.exe` y el instalador en `src-tauri/target/release/`.
-- **Distribución:** por ahora ninguna. No configurar firma de código, actualizador automático (`tauri-plugin-updater`) ni instalador MSI/NSIS hasta que Manu lo pida. Es una app personal.
+- **Distribución: instalador NSIS sí, firma y actualizador no** (decisión de Manu, 2026-09-04, issue #16 — **reemplaza la postergación previa de los tres**). Razonado en [`docs/specs/SPEC-distribution.md`](docs/specs/SPEC-distribution.md).
+  - **NSIS es el único target** (`bundle.targets: ["nsis"]`). Se eligió sobre MSI porque escribe el `AppUserModelID` en los accesos directos del menú Inicio **y** del escritorio, mientras que MSI solo en el del menú Inicio — y ese identificador es lo que habilita un toast de Windows con la identidad de Cairn (§11, `docs/DESIGN.md` §7). Instala por usuario, sin pedir administrador.
+  - **No se firma el código, y no es por precio nada más:** desde marzo de 2024 los certificados EV **ya no suprimen el aviso de SmartScreen** — EV y OV construyen reputación por igual, de a poco. Son ~US$ 200–580/año para no resolver el problema. Se sale sin firmar y se avisa en la landing.
+  - **No se agrega `tauri-plugin-updater`.** Implica un endpoint, o sea una llamada saliente, y eso necesita decisión explícita de Manu (§2).
+- **El modelo de negocio es gratis con propina**, y un pack de temas opcional más adelante. Ninguna propuesta puede introducir anuncios, cuentas, telemetría ni suscripción sin romper §2: son la promesa publicada en la landing, no una preferencia.
 - **Sin CI todavía.** No crear workflows de GitHub Actions ni CircleCI sin pedirlo. La verificación es local (§7).
 
 ## 5. Prácticas de Código

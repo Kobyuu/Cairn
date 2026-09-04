@@ -225,10 +225,12 @@ etapa 6, con su dependencia de Cargo. Dos razones que se suman:
 
 1. **Es redundante.** El toast aparecía en el mismo instante en que la pantalla
    de Foco tapa el monitor entero, o sea un aviso encima del aviso.
-2. **Sale con la identidad de PowerShell.** Un toast de Windows necesita un
-   `AppUserModelID` registrado por un instalador, y Cairn todavía no tiene uno
-   (CLAUDE.md §4). Sin eso el plugin cae al AUMID de PowerShell y el aviso se
-   ve como si lo mandara otro programa.
+2. **~~Sale con la identidad de PowerShell.~~ Resuelto por #16.** Un toast de
+   Windows necesita un `AppUserModelID` registrado por un instalador. Cuando se
+   escribió esto Cairn no tenía; desde #16 el instalador NSIS lo registra con
+   `com.kobyuu.cairn` (`docs/specs/SPEC-distribution.md` §5). **La razón 1 sigue
+   en pie y sola alcanza**: el toast sería un aviso encima del aviso. Si algún
+   día se decide "avisar sin taparte", ya no hay impedimento técnico.
 
 El aviso de Cairn **es** la pantalla de Foco, más el tono de `src/sound.ts` si
 el interruptor de Ajustes está encendido. Un toast propio sólo tendría sentido
