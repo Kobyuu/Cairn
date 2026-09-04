@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /og.html
 
-Sitemap: https://cairn.app/sitemap.xml
+Sitemap: https://cairn-roan.vercel.app/sitemap.xml

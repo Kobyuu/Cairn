@@ -40,9 +40,13 @@ no-JS. **El markup es los datos.** Se corrige esa línea de `DESIGN.md`.
 - `site/index.html` — las ocho secciones, menos precio (§2).
 - `site/styles.css` — tokens del sistema web, escala tipográfica, grilla, motion.
 - **Capturas reales exportadas de la app**, con los marcos A / B / C del kit.
-  Reemplazan las recreaciones HTML/CSS del prototipo. **PNG, sin WebP:** no hay
-  codificador en la máquina y agregar uno es una dependencia que necesita el OK
-  de CLAUDE.md §5. Queda anotado como pendiente.
+  Reemplazan las recreaciones HTML/CSS del prototipo. Se sirven en **WebP**
+  (`cwebp`, instalado fuera del repo en `D:\Programas\libwebp`): las de UI en
+  **lossless** —tipografía fina sobre fondo oscuro es donde el lossy se
+  ensucia— y las tiras de Ambiente en **lossy `-q 90 -sharp_yuv`**, porque
+  detrás hay un fondo de escritorio fotográfico y ahí lossless *engorda*: 15 KB
+  de PNG plano se volvían 182 KB. El resultado son 650 KB de imágenes contra
+  1,3 MB en PNG.
 - OG image 1200 × 630.
 - `robots.txt`, `sitemap.xml`, favicon, `site.webmanifest` no.
 - SEO: `title`, `description`, `canonical`, Open Graph, Twitter card, JSON-LD
@@ -97,6 +101,8 @@ Fondo `#0B0C0B` en toda la página: **no hay secciones claras**.
 
 De la app **real**, tema oscuro, y los mismos números en toda la web.
 
+El fondo de las tres tiras es el escritorio real, sin ventanas ni íconos.
+
 | Marco | Contenido | Números |
 | --- | --- | --- |
 | A | Foco vencido, a pantalla completa | `01:24`, rutina «CORRECCIÓN DE POSTURA» |
@@ -104,8 +110,11 @@ De la app **real**, tema oscuro, y los mismos números en toda la web.
 | C | Tira superior de Ambiente ×3 | 18 % · 62 % · 93 % (esta a 5 px, respirando) |
 | A recortado | Rutina en lectura y en edición | 2 de 5 hechas |
 
-Reglas: PNG (ver §3 sobre WebP), servido con `<img>` y sus `width`/`height`
-reales para que la página no salte al cargar. La barra de Ambiente se muestra a
+Reglas: WebP (ver §3), servido con `<img>` y sus `width`/`height` reales para
+que la página no salte al cargar. Sin `<picture>` ni respaldo PNG: WebP tiene
+soporte universal desde 2020 y duplicar cada archivo por un navegador que no
+existe es peso muerto. La excepción es `og.png`, que sigue en PNG porque varios
+lectores de tarjetas sociales todavía no leen WebP. La barra de Ambiente se muestra a
 **su grosor real** —medida pixel a pixel en las tres tiras: 3 px al 18 % y al
 62 %, 5 px al 93 %— y si no se ve se agranda el encuadre, nunca la barra. Nunca
 marcos de macOS, manos sosteniendo pantallas ni perspectiva 3D.

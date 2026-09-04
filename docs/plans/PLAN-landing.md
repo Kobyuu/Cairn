@@ -92,10 +92,11 @@ manual completa.
 - **Las etiquetas de las tiras de Ambiente van debajo, no encima.** El prototipo
   las apoya sobre un gradiente vacío; sobre una captura real de escritorio se
   pisan con el contenido de la ventana.
-- **Sin WebP.** No hay codificador en la máquina (ni `cwebp`, ni `ffmpeg`, ni
-  ImageMagick) y agregar uno es una dependencia que necesita el OK de §5. Las
-  imágenes se sirven en PNG y los `<source>` se sacaron: un `<source>` apuntando
-  a un archivo inexistente rompe la imagen entera, no degrada.
+- **WebP sin respaldo PNG.** Con el OK de Manu se instaló `cwebp` **fuera del
+  repo** (`D:\Programas\libwebp`), así que no entra como dependencia de
+  proyecto. Lossless para las capturas de UI, lossy `-q 90 -sharp_yuv` para las
+  tiras de Ambiente, que llevan un fondo fotográfico detrás. No hay `<picture>`
+  con respaldo: WebP es universal desde 2020.
 - **La imagen de OG se generó abriendo `site/og.html` en una ventana `--app` del
   navegador y capturándola con `PrintWindow`.** Queda `site/og.html` como fuente
   para regenerarla.
