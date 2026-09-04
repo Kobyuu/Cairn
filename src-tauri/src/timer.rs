@@ -29,7 +29,11 @@ const POISONED: &str = "el estado del temporizador quedo envenenado";
 ///
 /// Sale al frontend como una union discriminada, `{"kind":"running","deadlineMs":N}`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
-#[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum Phase {
     // No hay `Idle`. Lo hubo mientras el proceso nacia sin haber leido el reloj;
     // desde que el estado inicial se construye en `setup()` con la hora de pared
@@ -79,22 +83,28 @@ pub fn advance(phase: Phase, interval_ms: u64, now_ms: u64) -> Phase {
             } else {
                 // El cronometro ascendente arranca en el vencimiento, no en el
                 // despertar, para que mida el atraso real (D3, rama corta).
-                Phase::Elapsed { since_ms: deadline_ms }
+                Phase::Elapsed {
+                    since_ms: deadline_ms,
+                }
             }
         }
         // Llegar aca implica `now_ms < deadline_ms` (lo garantiza la guarda de
         // arriba), asi que la resta no puede desbordar por abajo. Aun asi va
         // `saturating_sub`: la invariante depende del ORDEN de los brazos, y
         // eso no lo protege ningun compilador si alguien mete uno en el medio.
-        Phase::Running { deadline_ms, cycle_ms }
-            if deadline_ms.saturating_sub(now_ms) > cycle_ms =>
-        {
+        Phase::Running {
+            deadline_ms,
+            cycle_ms,
+        } if deadline_ms.saturating_sub(now_ms) > cycle_ms => {
             // El reloj salto para atras (NTP o cambio manual) y quedo un
             // restante mas largo que el ciclo entero. Se recorta rebasando el
             // deadline, es decir corrigiendo el ESTADO y no una vista: las
             // ventanas derivan su contador de `deadline_ms`, asi que un clamp
             // que viviera solo en un getter de Rust no las protegeria (D2).
-            Phase::Running { deadline_ms: now_ms + cycle_ms, cycle_ms }
+            Phase::Running {
+                deadline_ms: now_ms + cycle_ms,
+                cycle_ms,
+            }
         }
         // `Elapsed` cae aca a proposito: vencido se queda vencido hasta que el
         // usuario confirme o posponga. Es la regla de producto de CLAUDE.md §2.
@@ -105,7 +115,10 @@ pub fn advance(phase: Phase, interval_ms: u64, now_ms: u64) -> Phase {
 /// Congela el restante. No hace nada si la fase no estaba corriendo.
 pub fn pause(phase: Phase, now_ms: u64) -> Phase {
     match phase {
-        Phase::Running { deadline_ms, cycle_ms } => Phase::Paused {
+        Phase::Running {
+            deadline_ms,
+            cycle_ms,
+        } => Phase::Paused {
             remaining_ms: deadline_ms.saturating_sub(now_ms),
             cycle_ms,
         },
@@ -129,7 +142,10 @@ pub fn pause(phase: Phase, now_ms: u64) -> Phase {
 /// barato al lado de una barra que miente.
 pub fn resume(phase: Phase, now_ms: u64) -> Phase {
     match phase {
-        Phase::Paused { remaining_ms, cycle_ms } => Phase::Running {
+        Phase::Paused {
+            remaining_ms,
+            cycle_ms,
+        } => Phase::Running {
             deadline_ms: now_ms + remaining_ms,
             cycle_ms,
         },
@@ -154,7 +170,10 @@ pub fn resume(phase: Phase, now_ms: u64) -> Phase {
 /// avisaba. Es un borde raro (cambiar el ajuste y suspender en el mismo ciclo) y
 /// blindarlo costaria arrastrar el intervalo con el que nacio cada ciclo.
 pub fn set_interval(state: TimerState, interval_ms: u64) -> TimerState {
-    TimerState { interval_ms, ..state }
+    TimerState {
+        interval_ms,
+        ..state
+    }
 }
 
 /// Arranca un ciclo entero desde cero. Es a la vez "Listo" y "Reiniciar".
@@ -449,30 +468,51 @@ mod tests {
 
     #[test]
     fn running_before_deadline() {
-        let phase = Phase::Running { deadline_ms: T0, cycle_ms: INTERVAL };
+        let phase = Phase::Running {
+            deadline_ms: T0,
+            cycle_ms: INTERVAL,
+        };
         assert_eq!(advance(phase, INTERVAL, T0 - 1), phase);
     }
 
     #[test]
     fn expires_at_exact_deadline() {
-        let phase = Phase::Running { deadline_ms: T0, cycle_ms: INTERVAL };
-        assert_eq!(advance(phase, INTERVAL, T0), Phase::Elapsed { since_ms: T0 });
+        let phase = Phase::Running {
+            deadline_ms: T0,
+            cycle_ms: INTERVAL,
+        };
+        assert_eq!(
+            advance(phase, INTERVAL, T0),
+            Phase::Elapsed { since_ms: T0 }
+        );
     }
 
     #[test]
     fn wake_slightly_overdue() {
-        let phase = Phase::Running { deadline_ms: T0, cycle_ms: INTERVAL };
+        let phase = Phase::Running {
+            deadline_ms: T0,
+            cycle_ms: INTERVAL,
+        };
         let now = T0 + INTERVAL / 2;
-        assert_eq!(advance(phase, INTERVAL, now), Phase::Elapsed { since_ms: T0 });
+        assert_eq!(
+            advance(phase, INTERVAL, now),
+            Phase::Elapsed { since_ms: T0 }
+        );
     }
 
     #[test]
     fn wake_long_overdue_resets_silent() {
-        let phase = Phase::Running { deadline_ms: T0, cycle_ms: INTERVAL };
+        let phase = Phase::Running {
+            deadline_ms: T0,
+            cycle_ms: INTERVAL,
+        };
         let now = T0 + INTERVAL + 1;
         assert_eq!(
             advance(phase, INTERVAL, now),
-            Phase::Running { deadline_ms: now + INTERVAL, cycle_ms: INTERVAL }
+            Phase::Running {
+                deadline_ms: now + INTERVAL,
+                cycle_ms: INTERVAL
+            }
         );
     }
 
@@ -482,15 +522,24 @@ mod tests {
         // disparar en la vida real. La condicion es `> interval`, estrictamente:
         // dormir exactamente un intervalo cae del lado corto y AVISA. Si alguien
         // cambia el `>` por `>=` en un refactor, D3 se invierte en silencio.
-        let phase = Phase::Running { deadline_ms: T0, cycle_ms: INTERVAL };
+        let phase = Phase::Running {
+            deadline_ms: T0,
+            cycle_ms: INTERVAL,
+        };
         let now = T0 + INTERVAL;
-        assert_eq!(advance(phase, INTERVAL, now), Phase::Elapsed { since_ms: T0 });
+        assert_eq!(
+            advance(phase, INTERVAL, now),
+            Phase::Elapsed { since_ms: T0 }
+        );
 
         // Un milisegundo mas y recien ahi reinicia en silencio.
         let now = T0 + INTERVAL + 1;
         assert_eq!(
             advance(phase, INTERVAL, now),
-            Phase::Running { deadline_ms: now + INTERVAL, cycle_ms: INTERVAL }
+            Phase::Running {
+                deadline_ms: now + INTERVAL,
+                cycle_ms: INTERVAL
+            }
         );
     }
 
@@ -532,16 +581,25 @@ mod tests {
     fn clock_jump_back_leaves_exactly_one_interval_alone() {
         // El otro lado del mismo filo: un restante de exactamente un intervalo
         // es legitimo (es un ciclo recien arrancado) y NO se toca.
-        let phase = Phase::Running { deadline_ms: T0 + INTERVAL, cycle_ms: INTERVAL };
+        let phase = Phase::Running {
+            deadline_ms: T0 + INTERVAL,
+            cycle_ms: INTERVAL,
+        };
         assert_eq!(advance(phase, INTERVAL, T0), phase);
     }
 
     #[test]
     fn pause_freezes_remaining() {
-        let phase = Phase::Running { deadline_ms: T0 + INTERVAL, cycle_ms: INTERVAL };
+        let phase = Phase::Running {
+            deadline_ms: T0 + INTERVAL,
+            cycle_ms: INTERVAL,
+        };
         assert_eq!(
             pause(phase, T0 + 10 * MIN),
-            Phase::Paused { remaining_ms: 35 * MIN, cycle_ms: INTERVAL }
+            Phase::Paused {
+                remaining_ms: 35 * MIN,
+                cycle_ms: INTERVAL
+            }
         );
     }
 
@@ -549,10 +607,16 @@ mod tests {
     fn resume_rebases_deadline_without_shrinking_the_cycle() {
         // El largo del ciclo sobrevive a la pausa: es lo que hace que la barra
         // de Ambiente siga desde donde estaba en vez de volver a cero.
-        let phase = Phase::Paused { remaining_ms: 35 * MIN, cycle_ms: INTERVAL };
+        let phase = Phase::Paused {
+            remaining_ms: 35 * MIN,
+            cycle_ms: INTERVAL,
+        };
         assert_eq!(
             resume(phase, T0),
-            Phase::Running { deadline_ms: T0 + 35 * MIN, cycle_ms: INTERVAL }
+            Phase::Running {
+                deadline_ms: T0 + 35 * MIN,
+                cycle_ms: INTERVAL
+            }
         );
     }
 
@@ -578,7 +642,10 @@ mod tests {
     fn snooze_extends_from_now() {
         assert_eq!(
             snooze(5 * MIN, T0),
-            Phase::Running { deadline_ms: T0 + 5 * MIN, cycle_ms: 5 * MIN }
+            Phase::Running {
+                deadline_ms: T0 + 5 * MIN,
+                cycle_ms: 5 * MIN
+            }
         );
     }
 
@@ -586,7 +653,10 @@ mod tests {
     fn snooze_arbitrary_minutes() {
         assert_eq!(
             snooze(17 * MIN, T0),
-            Phase::Running { deadline_ms: T0 + 17 * MIN, cycle_ms: 17 * MIN }
+            Phase::Running {
+                deadline_ms: T0 + 17 * MIN,
+                cycle_ms: 17 * MIN
+            }
         );
     }
 
@@ -594,7 +664,10 @@ mod tests {
     fn done_restarts_full_interval() {
         assert_eq!(
             restart(INTERVAL, T0),
-            Phase::Running { deadline_ms: T0 + INTERVAL, cycle_ms: INTERVAL }
+            Phase::Running {
+                deadline_ms: T0 + INTERVAL,
+                cycle_ms: INTERVAL
+            }
         );
     }
 
@@ -604,11 +677,17 @@ mod tests {
         // a 1h45m, mas de un intervalo entero. El restante se recorta rebasando
         // el deadline, para que la ventana -que deriva de `deadline_ms`- vea el
         // valor corregido y no el podrido (D2).
-        let phase = Phase::Running { deadline_ms: T0 + INTERVAL, cycle_ms: INTERVAL };
+        let phase = Phase::Running {
+            deadline_ms: T0 + INTERVAL,
+            cycle_ms: INTERVAL,
+        };
         let now = T0 - 60 * MIN;
         assert_eq!(
             advance(phase, INTERVAL, now),
-            Phase::Running { deadline_ms: now + INTERVAL, cycle_ms: INTERVAL }
+            Phase::Running {
+                deadline_ms: now + INTERVAL,
+                cycle_ms: INTERVAL
+            }
         );
     }
 
@@ -624,7 +703,10 @@ mod tests {
 
     #[test]
     fn paused_does_not_expire() {
-        let phase = Phase::Paused { remaining_ms: 35 * MIN, cycle_ms: INTERVAL };
+        let phase = Phase::Paused {
+            remaining_ms: 35 * MIN,
+            cycle_ms: INTERVAL,
+        };
         assert_eq!(advance(phase, INTERVAL, T0 + 10 * INTERVAL), phase);
     }
 
@@ -636,7 +718,10 @@ mod tests {
 
     #[test]
     fn resume_is_a_noop_off_paused() {
-        let running = Phase::Running { deadline_ms: T0, cycle_ms: INTERVAL };
+        let running = Phase::Running {
+            deadline_ms: T0,
+            cycle_ms: INTERVAL,
+        };
         assert_eq!(resume(running, T0 + 1), running);
     }
 
@@ -646,7 +731,10 @@ mod tests {
         // ningun compilador se queje: si serde renombra un campo, la ventana
         // muestra NaN y el build sigue verde. Este test clava el contrato.
         let state = TimerState {
-            phase: Phase::Running { deadline_ms: T0, cycle_ms: INTERVAL },
+            phase: Phase::Running {
+                deadline_ms: T0,
+                cycle_ms: INTERVAL,
+            },
             interval_ms: INTERVAL,
             quick_snooze_ms: 5 * MIN,
         };
@@ -664,8 +752,11 @@ mod tests {
         // avance que dibujan Ambiente y el widget, y hasta la etapa 4 estaba
         // marcado `serde(skip)`. Si alguien lo vuelve a saltear, la barra se
         // queda clavada en cero y nada mas se rompe: por eso esta clavado aca.
-        let paused = serde_json::to_value(Phase::Paused { remaining_ms: MIN, cycle_ms: INTERVAL })
-            .expect("paused tiene que serializar");
+        let paused = serde_json::to_value(Phase::Paused {
+            remaining_ms: MIN,
+            cycle_ms: INTERVAL,
+        })
+        .expect("paused tiene que serializar");
         assert_eq!(
             paused,
             serde_json::json!({ "kind": "paused", "remainingMs": MIN, "cycleMs": INTERVAL })
@@ -673,15 +764,25 @@ mod tests {
 
         let elapsed =
             serde_json::to_value(Phase::Elapsed { since_ms: T0 }).expect("elapsed serializa");
-        assert_eq!(elapsed, serde_json::json!({ "kind": "elapsed", "sinceMs": T0 }));
+        assert_eq!(
+            elapsed,
+            serde_json::json!({ "kind": "elapsed", "sinceMs": T0 })
+        );
     }
 
     #[test]
     fn changing_the_interval_leaves_the_running_cycle_alone() {
         // La regla de la etapa 3: cambiar un ajuste NO puede destruir tiempo ya
         // invertido. El intervalo nuevo aplica al proximo ciclo, no a este.
-        let phase = Phase::Running { deadline_ms: T0 + INTERVAL, cycle_ms: INTERVAL };
-        let state = TimerState { phase, interval_ms: INTERVAL, quick_snooze_ms: 5 * MIN };
+        let phase = Phase::Running {
+            deadline_ms: T0 + INTERVAL,
+            cycle_ms: INTERVAL,
+        };
+        let state = TimerState {
+            phase,
+            interval_ms: INTERVAL,
+            quick_snooze_ms: 5 * MIN,
+        };
 
         let next = set_interval(state, 5 * MIN);
 
@@ -694,7 +795,11 @@ mod tests {
         // El otro lado: vencido sigue vencido. Antes esto necesitaba una
         // excepcion explicita dentro del comando; ahora sale gratis.
         let phase = Phase::Elapsed { since_ms: T0 };
-        let state = TimerState { phase, interval_ms: INTERVAL, quick_snooze_ms: 5 * MIN };
+        let state = TimerState {
+            phase,
+            interval_ms: INTERVAL,
+            quick_snooze_ms: 5 * MIN,
+        };
 
         assert_eq!(set_interval(state, 5 * MIN).phase, phase);
     }
@@ -705,8 +810,15 @@ mod tests {
         // el despertar-tardio contra el intervalo VIGENTE, no contra el que
         // tenia el ciclo al nacer. Hasta aca vivia solo en un comentario, y sin
         // test "aceptado a proposito" y "roto sin querer" se ven igual en verde.
-        let phase = Phase::Running { deadline_ms: T0, cycle_ms: INTERVAL };
-        let state = TimerState { phase, interval_ms: INTERVAL, quick_snooze_ms: 5 * MIN };
+        let phase = Phase::Running {
+            deadline_ms: T0,
+            cycle_ms: INTERVAL,
+        };
+        let state = TimerState {
+            phase,
+            interval_ms: INTERVAL,
+            quick_snooze_ms: 5 * MIN,
+        };
 
         let lowered = set_interval(state, 5 * MIN);
         assert_eq!(lowered.phase, phase, "el ciclo en curso sigue intacto");
@@ -716,12 +828,18 @@ mod tests {
         let now = T0 + 6 * MIN;
         assert_eq!(
             advance(lowered.phase, lowered.interval_ms, now),
-            Phase::Running { deadline_ms: now + 5 * MIN, cycle_ms: 5 * MIN }
+            Phase::Running {
+                deadline_ms: now + 5 * MIN,
+                cycle_ms: 5 * MIN
+            }
         );
 
         // Control: con el intervalo original vigente, el mismo atraso avisaba.
         // Prueba que el cambio viene del intervalo y no de otra cosa.
-        assert_eq!(advance(phase, INTERVAL, now), Phase::Elapsed { since_ms: T0 });
+        assert_eq!(
+            advance(phase, INTERVAL, now),
+            Phase::Elapsed { since_ms: T0 }
+        );
     }
 
     #[test]

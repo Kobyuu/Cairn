@@ -143,7 +143,10 @@ impl Settings {
         map.insert("default_mode".into(), self.default_mode.clone().into());
         map.insert("quick_snooze_min".into(), self.quick_snooze_min.into());
         if let Some(pos) = self.widget_pos {
-            map.insert("widget_pos".into(), serde_json::json!({ "x": pos.x, "y": pos.y }));
+            map.insert(
+                "widget_pos".into(),
+                serde_json::json!({ "x": pos.x, "y": pos.y }),
+            );
         }
         map.insert("autostart".into(), self.autostart.into());
         map.insert("theme".into(), self.theme.clone().into());
@@ -255,7 +258,11 @@ pub fn settings_snapshot(app: AppHandle) -> Settings {
 pub fn settings_set_autostart(app: AppHandle, enabled: bool) -> Result<Settings, String> {
     {
         let manager = app.autolaunch();
-        let applied = if enabled { manager.enable() } else { manager.disable() };
+        let applied = if enabled {
+            manager.enable()
+        } else {
+            manager.disable()
+        };
         applied.map_err(|error| format!("no se pudo cambiar el inicio con Windows: {error}"))?;
     }
     update(&app, |settings| settings.autostart = enabled);
@@ -358,7 +365,10 @@ mod tests {
     fn missing_keys_fall_back_to_defaults() {
         // Un archivo escrito por una version vieja, o uno recortado a mano.
         let json = json!({ "interval_min": 30 });
-        let expected = Settings { interval_min: 30, ..Settings::default() };
+        let expected = Settings {
+            interval_min: 30,
+            ..Settings::default()
+        };
         assert_eq!(Settings::from_json(&json), expected);
     }
 
@@ -401,7 +411,10 @@ mod tests {
         // Vale la pena clavarlo porque es la unica forma de meter un numero
         // invalido sin escribir un string.
         let json = json!({ "interval_min": -5 });
-        assert_eq!(Settings::from_json(&json).interval_min, DEFAULT_INTERVAL_MIN);
+        assert_eq!(
+            Settings::from_json(&json).interval_min,
+            DEFAULT_INTERVAL_MIN
+        );
     }
 
     #[test]

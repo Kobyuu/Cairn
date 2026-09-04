@@ -266,7 +266,9 @@ pub fn show_mode(app: &AppHandle, mode: Mode) {
 /// minimizar → traerla → minimizar sigue funcionando.
 pub fn dismiss_focus(app: &AppHandle) {
     let already = {
-        let Some(state) = app.try_state::<Mutex<ModeState>>() else { return };
+        let Some(state) = app.try_state::<Mutex<ModeState>>() else {
+            return;
+        };
         let Ok(mut guard) = state.lock() else {
             eprintln!("[cairn] {POISONED}");
             return;
@@ -321,7 +323,9 @@ fn change(app: &AppHandle, mode: Mode, remember: bool) {
         crate::tray::sync_mode(app, mode);
     }
     if changed && remember {
-        settings::update(app, |settings| settings.default_mode = mode.label().to_string());
+        settings::update(app, |settings| {
+            settings.default_mode = mode.label().to_string()
+        });
         // Tambien a las ventanas: la seccion MODOS de Ajustes puede estar
         // abierta, y sin esto la tarjeta marcada se quedaria en el modo viejo
         // al cambiarlo desde la bandeja.
@@ -357,7 +361,9 @@ pub fn modes_set(app: AppHandle, mode: String) -> Result<(), String> {
 /// Olvida cual era la ventana visible, para que el proximo `apply` la muestre
 /// aunque no haya cambiado nada.
 fn forget_visible(app: &AppHandle) {
-    let Some(state) = app.try_state::<Mutex<ModeState>>() else { return };
+    let Some(state) = app.try_state::<Mutex<ModeState>>() else {
+        return;
+    };
     let Ok(mut guard) = state.lock() else { return };
     guard.visible = None;
 }
@@ -365,7 +371,9 @@ fn forget_visible(app: &AppHandle) {
 /// Reacciona a un cambio de fase. La llama `timer::announce`, **con el candado
 /// del temporizador tomado**, asi que aca adentro solo puede haber setters.
 pub fn sync(app: &AppHandle, phase: Phase) {
-    let Some((mode, dismissed)) = chosen(app) else { return };
+    let Some((mode, dismissed)) = chosen(app) else {
+        return;
+    };
     // El descarte caduca al salir de vencido: confirmar con LISTO -o posponer-
     // devuelve a Cairn el derecho de taparte la pantalla la proxima vez. Sin
     // esta linea, apartar Foco una vez la apagaria para siempre.
@@ -379,7 +387,9 @@ pub fn sync(app: &AppHandle, phase: Phase) {
 /// Borra el descarte. Solo setters, para poder llamarla desde `sync`, que corre
 /// con el candado del temporizador tomado.
 fn forget_dismissal(app: &AppHandle) {
-    let Some(state) = app.try_state::<Mutex<ModeState>>() else { return };
+    let Some(state) = app.try_state::<Mutex<ModeState>>() else {
+        return;
+    };
     let Ok(mut guard) = state.lock() else { return };
     guard.dismissed = false;
 }
@@ -390,7 +400,9 @@ fn forget_dismissal(app: &AppHandle) {
 /// anuncio del temporizador y conmutar de verdad es raro.
 fn apply(app: &AppHandle, target: Mode) {
     {
-        let Some(state) = app.try_state::<Mutex<ModeState>>() else { return };
+        let Some(state) = app.try_state::<Mutex<ModeState>>() else {
+            return;
+        };
         let Ok(mut guard) = state.lock() else { return };
         if guard.visible == Some(target) {
             return;
@@ -399,7 +411,9 @@ fn apply(app: &AppHandle, target: Mode) {
     }
 
     for mode in Mode::ALL {
-        let Some(window) = window(app, mode) else { continue };
+        let Some(window) = window(app, mode) else {
+            continue;
+        };
         if mode == target {
             // El orden `show` -> `unminimize` -> `set_focus` no es negociable
             // (D7): el `set_focus` de tao arranca con `if is_visible &&
@@ -434,13 +448,17 @@ fn align(app: &AppHandle, target: Mode) {
     if target == Mode::Widget {
         return;
     }
-    let Some(window) = window(app, target) else { return };
+    let Some(window) = window(app, target) else {
+        return;
+    };
 
     // El nombre se saca del candado y se SUELTA antes de preguntarle a Windows:
     // los getters de monitor esperan al hilo principal, y esperar con el
     // candado tomado es la mitad de un abrazo mortal (ver la cabecera).
     let wanted = {
-        let Some(state) = app.try_state::<Mutex<ModeState>>() else { return };
+        let Some(state) = app.try_state::<Mutex<ModeState>>() else {
+            return;
+        };
         let Ok(guard) = state.lock() else { return };
         guard.monitor.clone()
     };
@@ -461,7 +479,9 @@ fn align(app: &AppHandle, target: Mode) {
         Mode::Widget => return,
     };
 
-    let Some(state) = app.try_state::<Mutex<ModeState>>() else { return };
+    let Some(state) = app.try_state::<Mutex<ModeState>>() else {
+        return;
+    };
     let Ok(mut guard) = state.lock() else { return };
     if guard.applied == Some((target, rect)) {
         return;
@@ -470,8 +490,14 @@ fn align(app: &AppHandle, target: Mode) {
     drop(guard);
 
     let (x, y, width, height) = rect;
-    log_step("set_position", window.set_position(PhysicalPosition::new(x, y)));
-    log_step("set_size", window.set_size(PhysicalSize::new(width, height)));
+    log_step(
+        "set_position",
+        window.set_position(PhysicalPosition::new(x, y)),
+    );
+    log_step(
+        "set_size",
+        window.set_size(PhysicalSize::new(width, height)),
+    );
 }
 
 /// El monitor elegido, o el primario si no hay eleccion o si el elegido ya no
@@ -600,7 +626,9 @@ pub fn keep_aligned(app: &AppHandle) {
 
 /// Anota que el usuario movio el widget. Solo memoria: el disco espera.
 pub fn remember_widget_move(app: &AppHandle, x: i32, y: i32) {
-    let Some(state) = app.try_state::<Mutex<ModeState>>() else { return };
+    let Some(state) = app.try_state::<Mutex<ModeState>>() else {
+        return;
+    };
     let Ok(mut guard) = state.lock() else { return };
     guard.widget_pos = Some(WidgetPos { x, y });
 }
@@ -612,7 +640,9 @@ pub fn remember_widget_move(app: &AppHandle, x: i32, y: i32) {
 /// la ventana: usa lo que anotaron los eventos `Moved`, y por eso es seguro
 /// llamarla con el candado del temporizador tomado.
 pub fn persist_widget_pos(app: &AppHandle) {
-    let Some(state) = app.try_state::<Mutex<ModeState>>() else { return };
+    let Some(state) = app.try_state::<Mutex<ModeState>>() else {
+        return;
+    };
     let Ok(guard) = state.lock() else { return };
     let Some(pos) = guard.widget_pos else { return };
     drop(guard);
@@ -627,7 +657,9 @@ pub fn persist_widget_pos(app: &AppHandle) {
 /// desconectarlo lo deja fuera de la pantalla para siempre, y la unica forma de
 /// recuperarlo seria editar `store.json` a mano.
 fn place_widget(app: &AppHandle) {
-    let Some(window) = window(app, Mode::Widget) else { return };
+    let Some(window) = window(app, Mode::Widget) else {
+        return;
+    };
 
     let saved = app
         .try_state::<Mutex<ModeState>>()
@@ -648,19 +680,24 @@ fn place_widget(app: &AppHandle) {
     let pos = match saved {
         Some(pos) if on_screen(pos) => pos,
         _ => {
-            let Ok(Some(monitor)) = window.primary_monitor() else { return };
-            let Ok(size) = window.outer_size() else { return };
+            let Ok(Some(monitor)) = window.primary_monitor() else {
+                return;
+            };
+            let Ok(size) = window.outer_size() else {
+                return;
+            };
             let margin = (WIDGET_MARGIN_CSS * monitor.scale_factor()).round() as i32;
             WidgetPos {
-                x: monitor.position().x + monitor.size().width as i32
-                    - size.width as i32
-                    - margin,
+                x: monitor.position().x + monitor.size().width as i32 - size.width as i32 - margin,
                 y: monitor.position().y + margin,
             }
         }
     };
 
-    log_step("set_position del widget", window.set_position(PhysicalPosition::new(pos.x, pos.y)));
+    log_step(
+        "set_position del widget",
+        window.set_position(PhysicalPosition::new(pos.x, pos.y)),
+    );
 }
 
 fn window(app: &AppHandle, mode: Mode) -> Option<WebviewWindow> {
@@ -730,9 +767,17 @@ mod tests {
         // el dia que alguien cambie la firma a `&mut Phase` esto deja de
         // compilar y esa es exactamente la alarma que se busca.
         let phases = [
-            Phase::Running { deadline_ms: 1_767_225_600_000, cycle_ms: 45 * 60_000 },
-            Phase::Paused { remaining_ms: 10 * 60_000, cycle_ms: 45 * 60_000 },
-            Phase::Elapsed { since_ms: 1_767_225_600_000 },
+            Phase::Running {
+                deadline_ms: 1_767_225_600_000,
+                cycle_ms: 45 * 60_000,
+            },
+            Phase::Paused {
+                remaining_ms: 10 * 60_000,
+                cycle_ms: 45 * 60_000,
+            },
+            Phase::Elapsed {
+                since_ms: 1_767_225_600_000,
+            },
         ];
 
         for phase in phases {
@@ -747,7 +792,10 @@ mod tests {
     #[test]
     fn elapsed_always_shows_focus_without_forgetting_the_chosen_mode() {
         let elapsed = Phase::Elapsed { since_ms: 0 };
-        let running = Phase::Running { deadline_ms: 1_000, cycle_ms: 1_000 };
+        let running = Phase::Running {
+            deadline_ms: 1_000,
+            cycle_ms: 1_000,
+        };
 
         // Vencido interrumpe desde cualquier modo...
         for mode in Mode::ALL {
@@ -777,7 +825,10 @@ mod tests {
         // Un descarte vale para ESTE vencimiento. Con la fase ya movida -LISTO,
         // posponer- el flag no tiene nada que decir, y `sync` lo borra: la
         // pausa siguiente vuelve a taparte la pantalla.
-        let running = Phase::Running { deadline_ms: 1_000, cycle_ms: 1_000 };
+        let running = Phase::Running {
+            deadline_ms: 1_000,
+            cycle_ms: 1_000,
+        };
         let elapsed = Phase::Elapsed { since_ms: 0 };
 
         // Corriendo, el descarte es irrelevante en las dos posiciones.
@@ -790,7 +841,10 @@ mod tests {
     #[test]
     fn paused_stays_in_the_chosen_mode() {
         // Pausar no es vencer: no tiene por que taparle la pantalla a nadie.
-        let paused = Phase::Paused { remaining_ms: 60_000, cycle_ms: 60_000 };
+        let paused = Phase::Paused {
+            remaining_ms: 60_000,
+            cycle_ms: 60_000,
+        };
         assert_eq!(visible_mode(Mode::Ambient, paused, false), Mode::Ambient);
     }
 
