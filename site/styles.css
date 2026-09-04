@@ -398,15 +398,6 @@ p {
   color: var(--ink);
 }
 
-/* PRÓXIMAMENTE: no hay release ni instalador todavía (issue #16).
-   Es un <button disabled> de verdad, no un link muerto. */
-.btn--soon,
-.btn--soon:hover {
-  background: var(--surface-2);
-  color: var(--ink-34);
-  cursor: default;
-}
-
 .btn--sm {
   padding: 11px 22px;
   font-size: 11px;
@@ -463,6 +454,17 @@ p {
 
 .hero__meta {
   margin-top: 20px;
+}
+
+/* El aviso de SmartScreen. NO se atenúa: es la instrucción que hace que la
+   descarga funcione, así que hereda el --ink-56 de .note (5,3:1, AA). */
+.hero__warn {
+  margin-top: 10px;
+  max-width: 46ch;
+}
+
+.nowrap {
+  white-space: nowrap;
 }
 
 /* ── Capturas ───────────────────────────────────────────────────────────── */
@@ -1014,8 +1016,11 @@ p {
 }
 
 @media (max-width: 480px) {
-  /* En una sola pantalla los anclas de sección sobran: se scrollea y ya. */
-  .nav__links a {
+  /* En una sola pantalla los anclas de sección sobran: se scrollea y ya.
+     El CTA queda: es un `a.btn` y el `:not(.btn)` lo excluye. Antes era un
+     <button> y la regla no lo alcanzaba; al volverlo enlace, sin esto
+     desaparecía justo en el ancho donde más importa. */
+  .nav__links a:not(.btn) {
     display: none;
   }
 }

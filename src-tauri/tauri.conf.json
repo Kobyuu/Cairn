@@ -66,12 +66,23 @@
     }
   },
   "bundle": {
-    "active": false,
+    "active": true,
+    "targets": ["nsis"],
+    "publisher": "Juan Manuel Kobayashi",
+    "copyright": "© 2026 Juan Manuel Kobayashi",
+    "homepage": "https://cairn-roan.vercel.app/",
+    "shortDescription": "Temporizador de pausas para Windows",
+    "longDescription": "Cairn te avisa cuándo parar y no vuelve a contar hasta que confirmás que terminaste. El resto del día es una barra de tres píxeles.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.ico"
-    ]
+    ],
+    "windows": {
+      "nsis": {
+        "languages": ["SpanishInternational", "English"]
+      }
+    }
   }
 }

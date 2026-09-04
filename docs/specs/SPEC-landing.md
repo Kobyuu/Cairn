@@ -21,8 +21,8 @@ verifica.
 | Repo | carpeta `site/` en este repo | Los tokens web extienden los de la app, el kit exige los mismos números en toda la web, y la descarga va a apuntar a un release de acá. |
 | Stack | HTML + CSS a mano, **sin build** | La página es una sola, y su único interactivo (el acordeón de preguntas) es `<details name>` nativo. Un framework agregaría un segundo `package.json` → `pnpm-workspace.yaml` con `packages:` → monorepo, contra CLAUDE.md §1. |
 | Hosting | Vercel, publish dir `site/`, build command vacío | Publica desde repo privado o público, subdominio gratis, y no obliga a workflow como GitHub Pages. Cloudflare Pages es equivalente. |
-| CTA | «PRÓXIMAMENTE» deshabilitado | No hay release, ni instalador, ni firma (CLAUDE.md §4). Se desbloquea en [#16](https://github.com/Kobyuu/Cairn/issues/16). |
-| Sección de precio | **no se publica** | Publicar US$ 18 sin checkout es peor que no publicarlo. Vuelve con #16. |
+| CTA | **descarga real** al release `v0.1.0` | Desbloqueado por [#16](https://github.com/Kobyuu/Cairn/issues/16): ya hay instalador NSIS. Los tres botones (nav, héroe, cierre) apuntan al `.exe` del GitHub Release, con el peso real (2,7 MB) y una nota honesta sobre el aviso de SmartScreen, porque no se firma (`docs/specs/SPEC-distribution.md` §4). |
+| Sección de precio | **sigue sin publicarse** | Cambió el motivo: antes faltaba el checkout, ahora **el producto es gratis**. En el pie hay un enlace de propina. La sección de precio vuelve recién si sale el pack de temas del release 2. |
 | Fuentes | Google Fonts por `<link>` | La prohibición de red es de la app, no de la web (`docs/DESIGN.md` §2 y §5). |
 
 ### Desvío deliberado del handoff
@@ -66,8 +66,8 @@ no-JS. **El markup es los datos.** Se corrige esa línea de `DESIGN.md`.
 | # | Sección | Estado |
 | --- | --- | --- |
 | — | Barra de Ambiente fija de 3 px arriba | 62 %, **nunca se anima** |
-| — | Nav | logo, MODOS · PREGUNTAS · botón deshabilitado (sale PRECIO) |
-| 1 | Héroe | promesa + subtítulo + CTA `PRÓXIMAMENTE` + captura de Foco en marco A |
+| — | Nav | logo, MODOS · PREGUNTAS · `DESCARGAR` (sale PRECIO) |
+| 1 | Héroe | promesa + subtítulo + CTA `DESCARGAR PARA WINDOWS` + peso y nota de SmartScreen + captura de Foco en marco A |
 | 2 | Los tres modos | Ambiente (marco C ×3) · Widget (marco B) · Foco |
 | 3 | El ciclo | cuatro estados en línea; la flecha vuelve sólo desde «confirmás» |
 | 4 | La rutina | lectura + edición, dos capturas |
@@ -75,7 +75,7 @@ no-JS. **El markup es los datos.** Se corrige esa línea de `DESIGN.md`.
 | ~~6~~ | ~~Precio~~ | **omitida** (§2) |
 | 6 | Preguntas | 5, acordeón `<details name="faq">`, la primera abierta |
 | 7 | Cierre | mojón + «La próxima pausa puede esperarte.» + CTA |
-| 8 | Pie | logotipo, contacto, licencia |
+| 8 | Pie | logotipo · CÓDIGO · NOVEDADES (releases) · INVITAME UN CAFÉ |
 
 ## 5. Sistema visual
 
@@ -136,9 +136,12 @@ de la rutina, que va a 32 px del borde superior.
   subieron a `--ink-56` (5,3:1) las etiquetas, los pies de las capturas y la
   nota de plataforma, y a `--ink-66` los enlaces de la nav y del pie. Es una
   desviación consciente del handoff: revertirla es cambiar esos tokens.
-  Quedan **debajo de AA a propósito** y no son texto: el punto del ciclo
-  (`--ink-30`, decorativo) y el botón `PRÓXIMAMENTE`, que está `disabled` y
-  cuyo color tenue **es** la señal (WCAG exime a los controles deshabilitados).
+  Queda **debajo de AA a propósito** y no es texto: el punto del ciclo
+  (`--ink-30`, decorativo). La nota del aviso de SmartScreen **no** se atenúa:
+  hereda el `--ink-56` de `.note` porque es la instrucción que hace que la
+  descarga funcione, no una aclaración al pie.
+  _(El botón `PRÓXIMAMENTE` que esta lista eximía por estar `disabled` ya no
+  existe: desde #16 los tres CTA son enlaces de descarga reales, §2.)_
 - `:focus-visible` con el anillo del sistema (outline 2px al 35 %, offset 3).
 - El acordeón es `<details>/<summary>` nativo: teclado y lector de pantalla salen gratis.
 - `prefers-reduced-motion: reduce` apaga la respiración y las entradas.

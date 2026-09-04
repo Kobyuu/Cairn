@@ -75,11 +75,12 @@ etapa cierra es la lista de `DESIGN.md` §7:
   `DESIGN.md` para el default.
 - **Ambiente sigue siendo 3–5 px.** El handoff lo confirma en "Pantallas
   faltantes"; coincide con `architecture.md` §D6 y `SPEC-presence-modes`.
-- **No hay notificación del sistema.** El toast de la etapa 3 salió acá: aparece
-  en el mismo instante en que Foco tapa el monitor entero, y sin instalador que
-  registre el `AppUserModelID` (CLAUDE.md §4) Windows lo emite con la identidad
-  de PowerShell. El aviso de Cairn es la pantalla de Foco más el tono. Detalle
-  en `DESIGN.md` §7 y en la nota final de `SPEC-system-integration.md`.
+- **No hay notificación del sistema.** El toast de la etapa 3 salió acá porque
+  aparece en el mismo instante en que Foco tapa el monitor entero: un aviso
+  encima del aviso. (La segunda razón de entonces —que sin instalador Windows lo
+  emitía con la identidad de PowerShell— **ya no corre desde #16**, que registra
+  el `AppUserModelID`.) El aviso de Cairn es la pantalla de Foco más el tono.
+  Detalle en `DESIGN.md` §7 y en la nota final de `SPEC-system-integration.md`.
 
 ## Tokens
 
