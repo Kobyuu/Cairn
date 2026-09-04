@@ -44,7 +44,11 @@ struct TrayHandles {
 }
 
 /// Arma el icono y el menu. Se llama una vez, desde `setup()`.
-pub fn init(app: &AppHandle, state: TimerState, mode: Mode) -> Result<(), Box<dyn std::error::Error>> {
+pub fn init(
+    app: &AppHandle,
+    state: TimerState,
+    mode: Mode,
+) -> Result<(), Box<dyn std::error::Error>> {
     let focus = mode_item(app, Mode::Focus, ID_MODE_FOCUS, "Foco", mode)?;
     let widget = mode_item(app, Mode::Widget, ID_MODE_WIDGET, "Widget", mode)?;
     let ambient = mode_item(app, Mode::Ambient, ID_MODE_AMBIENT, "Ambiente", mode)?;
@@ -174,7 +178,10 @@ pub fn sync(app: &AppHandle, state: TimerState) {
             return;
         };
         log_step("set_text del item de pausa", handles.toggle.set_text(text));
-        log_step("set_enabled del item de pausa", handles.toggle.set_enabled(enabled));
+        log_step(
+            "set_enabled del item de pausa",
+            handles.toggle.set_enabled(enabled),
+        );
     });
     if let Err(error) = dispatched {
         eprintln!("[cairn] no se pudo despachar la sincronizacion de la bandeja: {error}");
@@ -194,7 +201,10 @@ pub fn sync_mode(app: &AppHandle, mode: Mode) {
             return;
         };
         for (item_mode, item) in &handles.modes {
-            log_step("set_checked de un modo", item.set_checked(*item_mode == mode));
+            log_step(
+                "set_checked de un modo",
+                item.set_checked(*item_mode == mode),
+            );
         }
     });
     if let Err(error) = dispatched {
